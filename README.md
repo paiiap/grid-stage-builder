@@ -94,18 +94,6 @@ No build step is required.
 
 Open `index.html` directly in a browser.
 
-For a local server:
-
-```bash
-python3 -m http.server 8000
-```
-
-Then open:
-
-```text
-http://localhost:8000
-```
-
 ## Test
 
 ```bash
