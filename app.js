@@ -2064,6 +2064,7 @@
       else if (object.category === "sofa") drawSofaObject(context, object, rect, size);
       else if (object.category === "bed") drawBedObject(context, object, rect, size);
       else drawGenericObject(context, object, rect, size);
+      if (layers.objectLabels && object.category !== "door") drawObjectLabel(context, object, rect, size);
     }
   }
 
@@ -2105,6 +2106,37 @@
     context.fillRect(rect.x, rect.y, rect.width, rect.height);
     context.strokeRect(rect.x, rect.y, rect.width, rect.height);
     drawFacingArrow(context, object.facing || "south", rect, size);
+  }
+
+  function drawObjectLabel(context, object, rect, size) {
+    const label = String(object.name || object.id || "").trim();
+    if (!label) return;
+    const padding = Math.max(4, size * 0.1);
+    const maxWidth = Math.max(12, rect.width - padding * 2);
+    let fontSize = Math.min(Math.max(10, size * 0.28), Math.max(10, rect.height * 0.42));
+    context.save();
+    context.font = `800 ${fontSize}px sans-serif`;
+    while (fontSize > 8 && context.measureText(label).width > maxWidth) {
+      fontSize -= 1;
+      context.font = `800 ${fontSize}px sans-serif`;
+    }
+    const textWidth = Math.min(maxWidth, context.measureText(label).width);
+    const labelWidth = textWidth + padding * 2;
+    const labelHeight = fontSize + padding * 1.35;
+    const x = rect.x + rect.width / 2;
+    const y = rect.y + rect.height / 2;
+    context.fillStyle = "rgba(255, 250, 240, 0.82)";
+    context.strokeStyle = "rgba(47, 41, 36, 0.42)";
+    context.lineWidth = 1.5;
+    context.beginPath();
+    context.roundRect(x - labelWidth / 2, y - labelHeight / 2, labelWidth, labelHeight, Math.max(4, size * 0.08));
+    context.fill();
+    context.stroke();
+    context.fillStyle = "#2f2924";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(label, x, y, maxWidth);
+    context.restore();
   }
 
   function drawDoorObject(context, object, rect, size) {
@@ -2770,10 +2802,11 @@
       doors: false,
       path: false,
       markers: false,
-      grid: false
+      grid: false,
+      objectLabels: false
     };
     if (kind === "gameplay") {
-      return Object.assign({}, allOff, { path: true, markers: true, grid: true });
+      return Object.assign({}, allOff, { path: true, markers: true, grid: true, objectLabels: false });
     }
     if (kind === "art") {
       return Object.assign({}, allOff, {
@@ -2782,6 +2815,7 @@
         structure: true,
         objects: true,
         doors: true,
+        objectLabels: true,
         path: false,
         markers: false,
         grid: true
@@ -2794,6 +2828,7 @@
       build: true,
       objects: true,
       doors: true,
+      objectLabels: true,
       path: true,
       markers: true,
       grid: true

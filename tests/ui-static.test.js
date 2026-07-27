@@ -641,13 +641,19 @@ test("stage PNG export uses the same east west top direction as JSON export", ()
 test("stage PNG export supports gameplay art and full layer presets", () => {
   const presetBody = functionBody(app, "stagePngLayers");
   const exportBody = functionBody(app, "exportStagePng");
-  assert.match(presetBody, /kind === "gameplay"[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
-  assert.match(presetBody, /kind === "art"[\s\S]*objects:\s*true[\s\S]*doors:\s*true[\s\S]*path:\s*false[\s\S]*markers:\s*false[\s\S]*grid:\s*true/);
-  assert.match(presetBody, /path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
+  assert.match(presetBody, /kind === "gameplay"[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true[\s\S]*objectLabels:\s*false/);
+  assert.match(presetBody, /kind === "art"[\s\S]*objects:\s*true[\s\S]*doors:\s*true[\s\S]*objectLabels:\s*true[\s\S]*path:\s*false[\s\S]*markers:\s*false[\s\S]*grid:\s*true/);
+  assert.match(presetBody, /objectLabels:\s*true[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
   assert.match(exportBody, /drawDocument\(off,\s*size,\s*\{ layers: stagePngLayers\(kind\) \}\)/);
   assert.match(app, /exportStageGameplayPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("gameplay"\)\)/);
   assert.match(app, /exportStageArtPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("art"\)\)/);
   assert.match(app, /exportStageFullPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("full"\)\)/);
+});
+
+test("object names render on PNG furniture exports", () => {
+  const body = functionBody(app, "drawObjects");
+  assert.match(app, /function drawObjectLabel/);
+  assert.match(body, /if \(layers\.objectLabels && object\.category !== "door"\) drawObjectLabel\(context,\s*object,\s*rect,\s*size\)/);
 });
 
 test("stage mode always shows saved stage list and preview panels", () => {
