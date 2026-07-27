@@ -1,0 +1,9 @@
+{
+  "name": "grid-stage-builder",
+  "version": "0.1.0",
+  "private": false,
+  "scripts": {
+    "test": "node --test tests/ui-static.test.js tests/core.test.js",
+    "check": "node --check app.js && node --check core.js"
+  }
+}

@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Stage Builder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <strong>Grid Stage Builder</strong>
+        <span>Map &amp; Stage Editor</span>
+      </div>
+      <div class="mode-switch" aria-label="โหมดทำงาน">
+        <button id="mapModeBtn" class="mode-btn active" data-mode="map" type="button">Maps</button>
+        <button id="stageModeBtn" class="mode-btn" data-mode="stage" type="button">Stage</button>
+      </div>
+      <div class="toolbar" aria-label="File controls">
+        <button id="newDocBtn" title="New map" type="button">N</button>
+        <button id="sampleBtn" title="Load sample" type="button">S</button>
+        <button id="undoBtn" title="Undo" type="button">&#8630;</button>
+        <button id="redoBtn" title="Redo" type="button">&#8631;</button>
+        <button id="importBtn" title="Import JSON" type="button">In</button>
+        <button data-mode-action="map" id="exportMasterBtn" title="Export master JSON" type="button">MJ</button>
+        <button data-mode-action="stage" id="exportStageBtn" title="Export stage JSON" type="button">SJ</button>
+        <button data-mode-action="stage" id="exportPngBtn" title="Export selected stage PNG" type="button">PNG</button>
+        <button data-mode-action="stage" id="exportPromptBtn" title="Export prompt text" type="button">TXT</button>
+        <button id="zoomOutBtn" title="Zoom out" type="button">-</button>
+        <button id="zoomInBtn" title="Zoom in" type="button">+</button>
+        <button id="gridBtn" title="Toggle grid" type="button">#</button>
+      </div>
+    </header>
+
+    <nav class="toolrail" aria-label="เครื่องมือแผนที่">
+      <button class="tool active" data-mode-tool="all" data-tool="select" title="V - เลือก" type="button"><kbd>V</kbd><span>เลือก</span></button>
+      <button class="tool" data-mode-tool="map" data-tool="tile" title="T - ระบาย" type="button"><kbd>T</kbd><span>ระบาย</span></button>
+      <button class="tool" data-mode-tool="map" data-tool="room" title="R - ห้อง" type="button"><kbd>R</kbd><span>ห้อง</span></button>
+      <button class="tool" data-mode-tool="map" data-tool="rect" title="Q - กรอบห้อง" type="button"><kbd>Q</kbd><span>กรอบห้อง</span></button>
+      <button class="tool" data-mode-tool="map" data-tool="object" title="O - วางสิ่งของในบ้าน" type="button"><kbd>O</kbd><span>ของบ้าน</span></button>
+      <button class="tool" data-mode-tool="stage" data-tool="stage" title="F - กรอบด่าน" type="button"><kbd>F</kbd><span>ด่าน</span></button>
+      <button class="tool" data-mode-tool="stage" data-tool="marker" title="M - จุดเกม" type="button"><kbd>M</kbd><span>จุดเกม</span></button>
+      <button class="tool" data-mode-tool="stage" data-tool="path" title="P - ทางเดิน" type="button"><kbd>P</kbd><span>ทาง</span></button>
+      <button class="tool" data-mode-tool="stage" data-tool="path_area" title="X - ขยายทางเดิน" type="button"><kbd>X</kbd><span>ขยายทาง</span></button>
+      <button class="tool" data-mode-tool="all" data-tool="erase" title="E - ลบ" type="button"><kbd>E</kbd><span>ลบ</span></button>
+      <button class="tool" data-mode-tool="all" data-tool="pan" title="H - เลื่อนจอ" type="button"><kbd>H</kbd><span>เลื่อน</span></button>
+
+      <section class="rail-layers" aria-label="Layer show hide">
+        <h2>SHOW/HIDE</h2>
+        <div class="layer-grid">
+          <label class="checkline"><input id="layerRoomInput" data-layer="room" type="checkbox" checked> Room Color</label>
+          <label class="checkline"><input id="layerTerrainInput" data-layer="terrain" type="checkbox" checked> Terrain i/o</label>
+          <label class="checkline"><input id="layerStructureInput" data-layer="structure" type="checkbox" checked> Structure</label>
+          <label class="checkline"><input id="layerBuildInput" data-layer="build" type="checkbox"> Build a/b/r</label>
+          <label class="checkline"><input id="layerObjectsInput" data-layer="objects" type="checkbox" checked> Objects</label>
+          <label class="checkline"><input id="layerDoorsInput" data-layer="doors" type="checkbox" checked> Doors</label>
+          <label class="checkline"><input id="layerPathInput" data-layer="path" type="checkbox" checked> Path</label>
+          <label class="checkline"><input id="layerMarkersInput" data-layer="markers" type="checkbox" checked> Markers</label>
+          <label class="checkline"><input id="layerGridInput" data-layer="grid" type="checkbox" checked> Grid</label>
+        </div>
+      </section>
+    </nav>
+
+    <section class="canvas-pane" aria-label="Map canvas workspace">
+      <div id="canvasScroller" class="canvas-scroller">
+        <canvas id="mapCanvas" width="2304" height="2304"></canvas>
+      </div>
+    </section>
+
+    <aside class="inspector">
+      <section class="panel" data-panel="status">
+        <h2>Selection</h2>
+        <div id="selectionSummary" class="summary">No tile selected</div>
+      </section>
+
+      <section class="panel" data-panel="map-manager">
+        <h2>Maps</h2>
+        <div id="mapList" class="stage-list" aria-label="รายการแผนที่"></div>
+        <label>ชื่อแผนที่ <input id="mapNameInput" value="Pawtectors House"></label>
+        <div class="field-row">
+          <button id="addMapBtn" class="choice-btn" type="button">+ แผนที่ใหม่</button>
+          <button id="duplicateMapBtn" class="choice-btn" type="button">คัดลอก</button>
+          <button id="deleteMapBtn" class="choice-btn" type="button">ลบ</button>
+        </div>
+        <div class="field-row">
+          <button id="exportMapsBtn" class="choice-btn" type="button">Export เลือก</button>
+          <button id="importMapsBtn" class="choice-btn" type="button">Import maps</button>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="tile">
+        <h2>ระบายช่อง</h2>
+        <input class="paint-value" id="structureInput" type="hidden" value="none">
+        <input class="paint-value" id="buildInput" type="hidden" value="allowed">
+        <div class="paint-group" role="group" aria-label="โครงสร้าง">
+          <div class="paint-title">โครงสร้าง</div>
+          <button class="choice-btn active" data-paint-target="structure" data-paint-value="none" type="button">ไม่มี</button>
+          <button class="choice-btn" data-paint-target="structure" data-paint-value="wall" type="button">กำแพง</button>
+          <button class="choice-btn" data-paint-target="structure" data-paint-value="window" type="button">หน้าต่าง</button>
+          <button class="choice-btn" data-paint-target="structure" data-paint-value="blocked" type="button">บล็อก</button>
+        </div>
+        <div class="paint-group" role="group" aria-label="สถานะวางของ">
+          <div class="paint-title">การวาง</div>
+          <button class="choice-btn active" data-paint-target="build" data-paint-value="allowed" type="button">วางได้</button>
+          <button class="choice-btn" data-paint-target="build" data-paint-value="blocked" type="button">ห้ามวาง</button>
+          <button class="choice-btn" data-paint-target="build" data-paint-value="reserved" type="button">จองไว้</button>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="room">
+        <h2>ห้อง</h2>
+        <div id="roomList" class="stage-list" aria-label="รายชื่อห้อง"></div>
+        <input id="roomIdInput" type="hidden" value="living_room">
+        <label>ชื่อห้อง <input id="roomNameInput" value="ห้องนั่งเล่น"></label>
+        <input id="roomColorInput" type="hidden" value="#2f8f73">
+        <input id="roomTypeInput" type="hidden" value="living_room">
+        <div class="field-row">
+          <button id="addRoomBtn" class="choice-btn" type="button">+ ห้อง</button>
+          <button id="deleteRoomBtn" class="choice-btn" type="button">ลบ</button>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="object">
+        <h2>สิ่งของ</h2>
+        <input id="objectRoomTypeInput" type="hidden" value="living_room">
+        <div id="objectRoomList" class="stage-list" aria-label="เลือกห้องของสิ่งของ"></div>
+        <input id="objectCategoryInput" type="hidden" value="sofa">
+        <div id="objectCategoryButtons" class="paint-group object-category-group" role="group" aria-label="ประเภทสิ่งของ"></div>
+        <label>ชื่อสิ่งของ <input id="objectNameInput" value="โซฟา"></label>
+        <div class="field-row">
+          <button id="addObjectDefinitionBtn" class="choice-btn" type="button">+ สิ่งของ</button>
+          <button id="deleteObjectDefinitionBtn" class="choice-btn" type="button">ลบ</button>
+        </div>
+        <div class="field-row">
+          <label>กว้าง <input id="objectWidthInput" type="number" min="1" max="12" value="3"></label>
+          <label>สูง <input id="objectHeightInput" type="number" min="1" max="12" value="2"></label>
+          <label>ทิศ
+            <select id="objectFacingInput">
+              <option value="north">เหนือ</option>
+              <option value="east">ตะวันออก</option>
+              <option value="south">ใต้</option>
+              <option value="west">ตะวันตก</option>
+            </select>
+          </label>
+        </div>
+        <input id="objectRotationInput" type="hidden" value="0">
+        <div class="field-row door-fields" hidden>
+          <label>แบบประตู
+            <select id="doorTypeInput">
+              <option value="hinged">บานเปิด</option>
+              <option value="sliding">บานเลื่อน</option>
+            </select>
+          </label>
+          <label>เปิด
+            <select id="doorSwingInput">
+              <option value="in">เปิดเข้า</option>
+              <option value="out">เปิดออก</option>
+              <option value="left">ซ้าย</option>
+              <option value="right">ขวา</option>
+            </select>
+          </label>
+          <label>สถานะ
+            <select id="doorOpenStateInput">
+              <option value="open">เปิด</option>
+              <option value="closed">ปิด</option>
+            </select>
+          </label>
+          <label>มุมบานพับ
+            <select id="doorHingeInput">
+              <option value="start">มุมเริ่ม</option>
+              <option value="end">มุมปลาย</option>
+            </select>
+          </label>
+        </div>
+        <label class="checkline"><input id="objectBlockingInput" type="checkbox" checked> Blocking</label>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="selected-object" hidden>
+        <h2>รายละเอียดสิ่งของ</h2>
+        <div id="selectedObjectSummary" class="summary">ยังไม่ได้เลือกสิ่งของ</div>
+        <div class="field-row">
+          <label>กว้าง <input id="selectedObjectWidthInput" type="number" min="1" max="12" value="1"></label>
+          <label>สูง <input id="selectedObjectHeightInput" type="number" min="1" max="12" value="1"></label>
+          <label>ทิศ
+            <select id="selectedObjectFacingInput">
+              <option value="north">เหนือ</option>
+              <option value="east">ตะวันออก</option>
+              <option value="south">ใต้</option>
+              <option value="west">ตะวันตก</option>
+            </select>
+          </label>
+        </div>
+        <div class="field-row selected-door-fields" hidden>
+          <label>แบบประตู
+            <select id="selectedDoorTypeInput">
+              <option value="hinged">บานเปิด</option>
+              <option value="sliding">บานเลื่อน</option>
+            </select>
+          </label>
+          <label>เปิด
+            <select id="selectedDoorSwingInput">
+              <option value="in">เปิดเข้า</option>
+              <option value="out">เปิดออก</option>
+              <option value="left">ซ้าย</option>
+              <option value="right">ขวา</option>
+            </select>
+          </label>
+          <label>สถานะ
+            <select id="selectedDoorOpenStateInput">
+              <option value="open">เปิด</option>
+              <option value="closed">ปิด</option>
+            </select>
+          </label>
+          <label>มุมบานพับ
+            <select id="selectedDoorHingeInput">
+              <option value="start">มุมเริ่ม</option>
+              <option value="end">มุมปลาย</option>
+            </select>
+          </label>
+        </div>
+        <label class="checkline"><input id="selectedObjectBlockingInput" type="checkbox"> Blocking</label>
+        <label class="checkline"><input id="selectedObjectOverlapInput" type="checkbox"> ซ้อนทับได้</label>
+      </section>
+
+      <section class="panel" data-mode-panel="stage" data-panel="stage-list">
+        <h2>รายการด่าน</h2>
+        <div id="stageList" class="stage-list" aria-label="รายการด่าน"></div>
+        <div class="field-row">
+          <button id="addStageBtn" class="choice-btn" type="button">+ ด่านใหม่</button>
+          <button id="duplicateStageBtn" class="choice-btn" type="button">คัดลอก</button>
+          <button id="deleteStageBtn" class="choice-btn" type="button">ลบ</button>
+        </div>
+        <div id="stageDetailControls">
+          <input id="stageIdInput" type="hidden" value="stage_01">
+          <label>ชื่อด่าน <input id="stageNameInput" value="Stage 01"></label>
+          <div class="field-row">
+            <label>W <input id="stageWidthInput" type="number" min="4" max="48" value="18"></label>
+            <label>H <input id="stageHeightInput" type="number" min="4" max="48" value="32"></label>
+          </div>
+          <label>Ratio
+            <select id="stageRatioInput">
+              <option value="9:16">9:16</option>
+              <option value="4:3">4:3</option>
+              <option value="16:9">16:9</option>
+              <option value="1:1">1:1</option>
+              <option value="custom">custom</option>
+            </select>
+          </label>
+          <label>Custom ratio <input id="stageCustomRatioInput" value="9:16"></label>
+          <label>ด้านบนตอน export
+            <select id="stageTopDirectionInput">
+              <option value="north">เหนือ</option>
+              <option value="east">ตะวันออก</option>
+              <option value="south">ใต้</option>
+              <option value="west">ตะวันตก</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="stage" data-panel="stage-marker">
+        <h2>จุดเกม</h2>
+        <label>Marker
+          <select id="markerTypeInput">
+            <option value="spawn">Spawn</option>
+            <option value="base">Base</option>
+            <option value="build_slot">Build slot</option>
+            <option value="choke_point">Choke point</option>
+            <option value="waypoint">Waypoint</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="panel" data-mode-panel="stage" data-panel="stage-path">
+        <h2>ทางเดิน</h2>
+        <label>ทาง
+          <select id="pathSelectInput"></select>
+        </label>
+        <div class="field-row">
+          <label>Spawn
+            <select id="pathSpawnInput"></select>
+          </label>
+          <label>Base
+            <select id="pathBaseInput"></select>
+          </label>
+        </div>
+        <div class="field-row">
+          <button id="addPathBtn" class="choice-btn" type="button">+ ทางใหม่</button>
+          <button id="deletePathBtn" class="choice-btn" type="button">ลบทาง</button>
+        </div>
+        <div id="pathWidthControls">
+          <label>ความกว้างทางเดิน <input id="pathWidthInput" type="number" min="1" max="6" value="1"></label>
+          <div class="field-row">
+            <button class="choice-btn" data-path-width="1" type="button">1 ช่อง</button>
+            <button class="choice-btn" data-path-width="2" type="button">2 ช่อง</button>
+            <button class="choice-btn" data-path-width="3" type="button">3 ช่อง</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="stage" data-panel="stage-preview">
+        <h2>Stage Preview / Export</h2>
+        <div id="stagePreviewSummary" class="summary">No stage selected</div>
+        <div id="stagePreviewStats" class="stat-grid"></div>
+        <div class="export-actions">
+          <button id="exportStageJsonBtn" class="choice-btn" type="button">JSON เกม</button>
+          <button id="exportStagePromptBtn" class="choice-btn" type="button">Prompt ภาพ</button>
+          <button id="exportStagePngBtn" class="choice-btn" type="button">PNG Preview</button>
+        </div>
+      </section>
+
+      <section class="panel" data-panel="status">
+        <h2>Prompt</h2>
+        <textarea id="promptOutput" spellcheck="false"></textarea>
+      </section>
+
+      <section class="panel" data-panel="status">
+        <h2>Validation</h2>
+        <ul id="validationList" class="validation-list"></ul>
+      </section>
+    </aside>
+
+    <footer class="statusbar">
+      <span id="coordStatus">x -, y -</span>
+      <span id="toolStatus">tool select</span>
+      <span id="zoomStatus">100%</span>
+      <span id="validationStatus">0 errors</span>
+    </footer>
+  </main>
+
+  <input id="fileInput" type="file" accept="application/json,.json" hidden>
+  <input id="mapBundleInput" type="file" accept="application/json,.json" multiple hidden>
+  <script src="core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
