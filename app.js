@@ -2711,7 +2711,9 @@
     document.getElementById("exportPngBtn").addEventListener("click", exportStagePng);
     document.getElementById("exportStageJsonBtn").addEventListener("click", exportActiveStageJson);
     document.getElementById("exportStagePromptBtn").addEventListener("click", exportActiveStagePrompt);
-    document.getElementById("exportStagePngBtn").addEventListener("click", exportStagePng);
+    document.getElementById("exportStageGameplayPngBtn").addEventListener("click", () => exportStagePng("gameplay"));
+    document.getElementById("exportStageArtPngBtn").addEventListener("click", () => exportStagePng("art"));
+    document.getElementById("exportStageFullPngBtn").addEventListener("click", () => exportStagePng("full"));
     elements.mapName.addEventListener("change", updateMapName);
     elements.addMap.addEventListener("click", addMap);
     elements.duplicateMap.addEventListener("click", duplicateMap);
@@ -2761,7 +2763,47 @@
     });
   }
 
-  function exportStagePng() {
+  function stagePngLayers(kind) {
+    const allOff = {
+      room: false,
+      terrain: false,
+      structure: false,
+      build: false,
+      objects: false,
+      doors: false,
+      path: false,
+      markers: false,
+      grid: false
+    };
+    if (kind === "gameplay") {
+      return Object.assign({}, allOff, { path: true, markers: true, grid: true });
+    }
+    if (kind === "art") {
+      return Object.assign({}, allOff, {
+        room: true,
+        terrain: true,
+        structure: true,
+        objects: true,
+        doors: true,
+        path: false,
+        markers: false,
+        grid: true
+      });
+    }
+    return {
+      room: true,
+      terrain: true,
+      structure: true,
+      build: true,
+      objects: true,
+      doors: true,
+      path: true,
+      markers: true,
+      grid: true
+    };
+  }
+
+  function exportStagePng(kind = "full") {
     const stage = activeStage();
     if (!stage) return;
     const size = stage.export_tile_size || 48;
@@ -2784,11 +2826,11 @@
       off.rotate(Math.PI / 2);
     }
     off.translate(-stage.x * size, -stage.y * size);
-    drawDocument(off, size, { layers: state.layers });
+    drawDocument(off, size, { layers: stagePngLayers(kind) });
     off.restore();
     const link = document.createElement("a");
     link.href = offscreen.toDataURL("image/png");
-    link.download = `pawtectors-${stage.id}.png`;
+    link.download = `pawtectors-${stage.id}-${kind}.png`;
     link.click();
   }
 

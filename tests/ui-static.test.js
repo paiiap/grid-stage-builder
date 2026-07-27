@@ -611,20 +611,36 @@ test("stage mode exposes preview and export panel", () => {
   assert.match(html, /id="stagePreviewStats"/);
   assert.match(html, /id="exportStageJsonBtn"[\s\S]*JSON เกม/);
   assert.match(html, /id="exportStagePromptBtn"[\s\S]*Prompt ภาพ/);
-  assert.match(html, /id="exportStagePngBtn"[\s\S]*PNG Preview/);
+  assert.match(html, /id="exportStageGameplayPngBtn"[\s\S]*PNG ทาง\/จุด\/กริด/);
+  assert.match(html, /id="exportStageArtPngBtn"[\s\S]*PNG พื้น\/ของ\/กริด/);
+  assert.match(html, /id="exportStageFullPngBtn"[\s\S]*PNG รวมทั้งหมด/);
   assert.match(app, /stagePreviewSummary:\s*document\.getElementById\("stagePreviewSummary"\)/);
   assert.match(app, /function stageExportData/);
   assert.match(app, /function refreshStagePreview/);
   assert.match(app, /elements\.stagePreviewStats\.innerHTML/);
   assert.match(app, /exportStageJsonBtn/);
   assert.match(app, /exportStagePromptBtn/);
-  assert.match(app, /exportStagePngBtn/);
+  assert.match(app, /exportStageGameplayPngBtn/);
+  assert.match(app, /exportStageArtPngBtn/);
+  assert.match(app, /exportStageFullPngBtn/);
 });
 
 test("stage PNG export uses the same east west top direction as JSON export", () => {
   const body = functionBody(app, "exportStagePng");
   assert.match(body, /stage\.top_direction === "east"[\s\S]*off\.rotate\(-Math\.PI \/ 2\)/);
   assert.match(body, /stage\.top_direction === "west"[\s\S]*off\.rotate\(Math\.PI \/ 2\)/);
+});
+
+test("stage PNG export supports gameplay art and full layer presets", () => {
+  const presetBody = functionBody(app, "stagePngLayers");
+  const exportBody = functionBody(app, "exportStagePng");
+  assert.match(presetBody, /kind === "gameplay"[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
+  assert.match(presetBody, /kind === "art"[\s\S]*objects:\s*true[\s\S]*doors:\s*true[\s\S]*path:\s*false[\s\S]*markers:\s*false[\s\S]*grid:\s*true/);
+  assert.match(presetBody, /path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
+  assert.match(exportBody, /drawDocument\(off,\s*size,\s*\{ layers: stagePngLayers\(kind\) \}\)/);
+  assert.match(app, /exportStageGameplayPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("gameplay"\)\)/);
+  assert.match(app, /exportStageArtPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("art"\)\)/);
+  assert.match(app, /exportStageFullPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("full"\)\)/);
 });
 
 test("stage mode always shows saved stage list and preview panels", () => {
