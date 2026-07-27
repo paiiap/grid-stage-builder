@@ -108,8 +108,8 @@
 
   function createDocument() {
     const map = {
-      id: "pawtectors_house",
-      name: "Pawtectors House",
+      id: "house",
+      name: "House",
       width: MAP_WIDTH,
       height: MAP_HEIGHT,
       tile_size: TILE_SIZE,
@@ -625,7 +625,7 @@
       ? `${stage.paths.length} enemy paths with ${stage.paths.reduce((sum, path) => sum + path.points.length, 0)} total centerline points`
       : "no enemy path";
     return [
-      `Portrait top-down block-grid game map, ${stage.local.width} x ${stage.local.height} tiles, square 48x48 pixel cells, single-floor Pawtectors house stage.`,
+      `Portrait top-down block-grid game map, ${stage.local.width} x ${stage.local.height} tiles, square 48x48 pixel cells, single-floor house stage.`,
       `Included zones: ${roomNames}.`,
       `Objects: ${objectText}.`,
       `Gameplay layout: ${pathText}; markers: ${markers}.`,

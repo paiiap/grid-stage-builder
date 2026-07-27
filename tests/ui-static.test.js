@@ -158,7 +158,8 @@ test("map manager imports and exports selected map bundles", () => {
   assert.match(app, /selectedMapIds:\s*new Set\(\)/);
   assert.match(app, /data-map-select-id/);
   assert.match(app, /function exportSelectedMaps/);
-  assert.match(app, /export_type:\s*"pawtectors_map_bundle"/);
+  assert.match(app, /export_type:\s*"grid_stage_builder_map_bundle"/);
+  assert.match(app, /"pawtectors_map_bundle"/);
   assert.match(app, /function importMapFiles/);
   assert.match(app, /function mergeImportedMaps/);
   assert.match(app, /function uniqueMapId/);

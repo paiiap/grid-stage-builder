@@ -2564,15 +2564,15 @@
     const maps = selectedMapsForExport().map((map) => clone(map));
     const bundle = {
       schema_version: 1,
-      export_type: "pawtectors_map_bundle",
+      export_type: "grid_stage_builder_map_bundle",
       maps
     };
-    downloadText("pawtectors-maps.json", JSON.stringify(bundle, null, 2), "application/json");
+    downloadText("grid-stage-builder-maps.json", JSON.stringify(bundle, null, 2), "application/json");
   }
 
   function exportMasterDocument() {
     normalizeMaps();
-    downloadText("pawtectors-house-master.json", JSON.stringify(state.doc, null, 2), "application/json");
+    downloadText("grid-stage-builder-project.json", JSON.stringify(state.doc, null, 2), "application/json");
   }
 
   function readJsonFile(file) {
@@ -2591,7 +2591,7 @@
   }
 
   function extractImportMaps(payload) {
-    if (payload?.export_type === "pawtectors_map_bundle" && Array.isArray(payload.maps)) return payload.maps;
+    if (["grid_stage_builder_map_bundle", "pawtectors_map_bundle"].includes(payload?.export_type) && Array.isArray(payload.maps)) return payload.maps;
     if (Array.isArray(payload?.maps)) return payload.maps;
     if (payload?.map && Array.isArray(payload.tiles)) return [payload];
     return [];
@@ -2655,7 +2655,7 @@
   function exportActiveStageJson() {
     const stage = activeStage();
     if (!stage) return;
-    downloadText(`pawtectors-${stage.id}.json`, JSON.stringify(core.exportStageJson(state.doc, stage.id), null, 2), "application/json");
+    downloadText(`grid-stage-builder-${stage.id}.json`, JSON.stringify(core.exportStageJson(state.doc, stage.id), null, 2), "application/json");
   }
 
   function exportActiveStagePrompt() {
@@ -2663,7 +2663,7 @@
     if (!stage) return;
     const prompt = core.buildPrompt(state.doc, stage.id);
     elements.prompt.value = prompt;
-    downloadText(`pawtectors-${stage.id}-prompt.txt`, prompt, "text/plain");
+    downloadText(`grid-stage-builder-${stage.id}-prompt.txt`, prompt, "text/plain");
   }
 
   function bindEvents() {
@@ -2862,7 +2862,7 @@
     off.restore();
     const link = document.createElement("a");
     link.href = offscreen.toDataURL("image/png");
-    link.download = `pawtectors-${stage.id}-${kind}.png`;
+    link.download = `grid-stage-builder-${stage.id}-${kind}.png`;
     link.click();
   }
 

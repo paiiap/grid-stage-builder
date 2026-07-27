@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "active_map_id": "pawtectors_house",
+  "active_map_id": "house",
   "map": {
-    "id": "pawtectors_house",
-    "name": "Pawtectors House",
+    "id": "house",
+    "name": "House",
     "width": 48,
     "height": 48,
     "tile_size": 48,
@@ -24101,11 +24101,11 @@
   ],
   "maps": [
     {
-      "id": "pawtectors_house",
-      "name": "Pawtectors House",
+      "id": "house",
+      "name": "House",
       "map": {
-        "id": "pawtectors_house",
-        "name": "Pawtectors House",
+        "id": "house",
+        "name": "House",
         "width": 48,
         "height": 48,
         "tile_size": 48,

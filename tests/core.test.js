@@ -14,7 +14,8 @@ test("createDocument builds a 48 x 48 single-floor map", () => {
 
 test("createDocument keeps the active map in a map collection", () => {
   const doc = core.createDocument();
-  assert.equal(doc.active_map_id, "pawtectors_house");
+  assert.equal(doc.active_map_id, "house");
+  assert.equal(doc.map.name, "House");
   assert.equal(doc.maps.length, 1);
   assert.equal(doc.maps[0].id, doc.map.id);
   assert.equal(doc.maps[0].name, doc.map.name);
