@@ -73,6 +73,13 @@ test("app applies and persists selectable themes", () => {
   assert(app.includes('querySelectorAll("[data-theme-choice]")'));
 });
 
+test("public app avoids old branded storage and cached scripts", () => {
+  assert.match(app, /const STORAGE_KEY = "gridStageBuilder\.project\.v1"/);
+  assert.doesNotMatch(app, /houseMapBuilder\.v1/);
+  assert.match(html, /<script src="core\.js\?v=[^"]+"><\/script>/);
+  assert.match(html, /<script src="app\.js\?v=[^"]+"><\/script>/);
+});
+
 test("paint panel exposes English named buttons instead of visible selects", () => {
   assert.match(html, /data-paint-target="structure"[\s\S]*Wall/);
   assert.match(html, /data-paint-target="build"[\s\S]*Allowed/);
@@ -159,7 +166,6 @@ test("map manager imports and exports selected map bundles", () => {
   assert.match(app, /data-map-select-id/);
   assert.match(app, /function exportSelectedMaps/);
   assert.match(app, /export_type:\s*"grid_stage_builder_map_bundle"/);
-  assert.match(app, /"pawtectors_map_bundle"/);
   assert.match(app, /function importMapFiles/);
   assert.match(app, /function mergeImportedMaps/);
   assert.match(app, /function uniqueMapId/);

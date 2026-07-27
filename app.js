@@ -2,7 +2,7 @@
   "use strict";
 
   const core = window.HouseMapCore;
-  const STORAGE_KEY = "pawtectors.houseMapBuilder.v1";
+  const STORAGE_KEY = "gridStageBuilder.project.v1";
   const THEME_STORAGE_KEY = "gridStageBuilder.theme";
   const THEME_CHOICES = new Set(["classic", "dark", "sweet"]);
   const GRID_MAJOR_EVERY = 5;
@@ -2591,7 +2591,7 @@
   }
 
   function extractImportMaps(payload) {
-    if (["grid_stage_builder_map_bundle", "pawtectors_map_bundle"].includes(payload?.export_type) && Array.isArray(payload.maps)) return payload.maps;
+    if (payload?.export_type === "grid_stage_builder_map_bundle" && Array.isArray(payload.maps)) return payload.maps;
     if (Array.isArray(payload?.maps)) return payload.maps;
     if (payload?.map && Array.isArray(payload.tiles)) return [payload];
     return [];
