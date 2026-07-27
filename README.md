@@ -6,6 +6,8 @@ Grid Stage Builder helps you design one master map, split it into playable stage
 
 It started as a house-map workflow for a mobile tower defense game, but the tool is intentionally generic enough for any block-grid stage design.
 
+![Sample stage preview](docs/sample-stage-preview.svg)
+
 ## What It Does
 
 - Build a full master map on a fixed 48 x 48 grid.
@@ -63,9 +65,11 @@ Each stage can be exported separately.
 
 Available stage exports:
 
-- `Game JSON` for game/runtime data.
+- `GameJSON` for game/runtime data.
 - `Image Prompt` for image-generation prompt text.
-- `PNG Preview` for a visual block-grid preview.
+- `PNG Full` for the complete stage image with art, grid, game points, path, and furniture names.
+- `PNG Art` for room color, terrain, structure, furniture, furniture names, and grid.
+- `PNG Game Points` for path, spawn/base/build slots, and grid.
 
 Stage JSON is cropped to the stage area and includes only the relevant tiles, rooms, objects, markers, and paths used by that stage.
 
