@@ -35,7 +35,7 @@ test("app uses neutral Grid Stage Builder branding", () => {
 });
 
 test("project menu uses save load wording before sample controls", () => {
-  assert.match(html, /id="newDocBtn"[\s\S]*New Map[\s\S]*id="exportMasterBtn"[\s\S]*Save Map[\s\S]*id="importBtn"[\s\S]*Load Map[\s\S]*id="sampleBtn"[\s\S]*Load Sample/);
+  assert.match(html, /id="newDocBtn"[\s\S]*New Project[\s\S]*id="exportMasterBtn"[\s\S]*Save Project[\s\S]*id="importBtn"[\s\S]*Load Project[\s\S]*id="sampleBtn"[\s\S]*Load Sample/);
   assert.doesNotMatch(html, /Export master JSON/);
   assert.doesNotMatch(html, />MJ</);
   assert.doesNotMatch(html, />In</);
