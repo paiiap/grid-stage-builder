@@ -503,6 +503,15 @@ test("stage path renderer dims inactive paths while editing paths", () => {
   assert.match(body, /context\.globalAlpha = pathDisplayAlpha\(path,\s*active\)[\s\S]*area\.x \* size/);
 });
 
+test("stage path layer renders above map objects markers stage frames and grid", () => {
+  const body = functionBody(app, "drawDocument");
+  const pathIndex = body.indexOf("drawPath(context, size)");
+  assert(pathIndex > body.indexOf("drawObjects(context, size, layers)"));
+  assert(pathIndex > body.indexOf("drawMarkers(context, size)"));
+  assert(pathIndex > body.indexOf("drawStages(context, size)"));
+  assert(pathIndex > body.indexOf("drawGrid(context, size)"));
+});
+
 test("stage list selection refreshes the active stage and canvas", () => {
   const body = functionBody(app, "setActiveStageId");
   assert.match(body, /state\.activeStageId = stage\.id/);
