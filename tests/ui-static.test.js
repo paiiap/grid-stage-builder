@@ -464,15 +464,18 @@ test("stage mode can select add and delete multiple paths", () => {
   assert.match(app, /path\.areas\.push/);
 });
 
-test("stage spawn and base markers use per-stage numbered labels", () => {
+test("stage gameplay markers use per-stage numbered labels", () => {
   const addBody = functionBody(app, "addMarker");
   const labelBody = functionBody(app, "stageMarkerLabel");
+  const numberBody = functionBody(app, "markerNumberLabel");
   const drawBody = functionBody(app, "drawMarkers");
   assert.match(app, /function nextStageMarkerNumber/);
   assert.match(addBody, /label:\s*stageMarkerLabel\(stage,\s*type\)/);
-  assert.match(labelBody, /type === "spawn" \? "Spawn" : "Base"/);
+  assert.match(labelBody, /type === "spawn" \? "Spawn" : type === "base" \? "Base" : "Slot"/);
   assert.match(labelBody, /nextStageMarkerNumber\(stage,\s*type\)/);
+  assert.match(numberBody, /\^\(Spawn\|Base\|Slot\)/);
   assert.match(drawBody, /markerNumberLabel\(marker\)/);
+  assert.doesNotMatch(drawBody, /continue;/);
 });
 
 test("stage mode validation list focuses on the active stage", () => {

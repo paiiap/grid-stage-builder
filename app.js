@@ -618,7 +618,7 @@
   }
 
   function nextStageMarkerNumber(stage, type) {
-    const prefix = type === "spawn" ? "Spawn" : "Base";
+    const prefix = type === "spawn" ? "Spawn" : type === "base" ? "Base" : "Slot";
     const numbers = markersOfType(stage, type)
       .map((marker) => String(marker.label || "").match(new RegExp(`^${prefix} (\\d+)$`))?.[1])
       .filter(Boolean)
@@ -627,15 +627,16 @@
   }
 
   function stageMarkerLabel(stage, type) {
-    if (type !== "spawn" && type !== "base") return type;
-    const prefix = type === "spawn" ? "Spawn" : "Base";
+    if (type !== "spawn" && type !== "base" && type !== "build_slot") return type;
+    const prefix = type === "spawn" ? "Spawn" : type === "base" ? "Base" : "Slot";
     return `${prefix} ${nextStageMarkerNumber(stage, type)}`;
   }
 
   function markerNumberLabel(marker) {
-    const match = String(marker.label || "").match(/^(Spawn|Base) (\d+)$/);
+    const match = String(marker.label || "").match(/^(Spawn|Base|Slot) (\d+)$/);
     if (!match) return marker.type === "spawn" ? "S" : marker.type === "base" ? "B" : "M";
-    return `${match[1] === "Spawn" ? "S" : "B"}${match[2]}`;
+    const prefix = match[1] === "Spawn" ? "S" : match[1] === "Base" ? "B" : "SL";
+    return `${prefix}${match[2]}`;
   }
 
   function createPath(stage) {
@@ -2176,10 +2177,10 @@
         context.setLineDash([8, 6]);
         context.strokeRect(x + 4, y + 4, width - 8, height - 8);
         context.setLineDash([]);
-        continue;
+      } else {
+        context.fillStyle = marker.type === "spawn" ? colors.spawn : marker.type === "base" ? colors.base : "#7d5fb0";
+        context.fillRect(x + 6, y + 6, width - 12, height - 12);
       }
-      context.fillStyle = marker.type === "spawn" ? colors.spawn : marker.type === "base" ? colors.base : "#7d5fb0";
-      context.fillRect(x + 6, y + 6, width - 12, height - 12);
       context.fillStyle = "#ffffff";
       context.font = `700 ${Math.max(12, size * 0.3)}px sans-serif`;
       context.textAlign = "center";
