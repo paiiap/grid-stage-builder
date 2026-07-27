@@ -537,6 +537,22 @@ test("stage mode can drag rectangular path area expansions", () => {
   assert.match(app, /drawPathAreas/);
 });
 
+test("stage path area expansions render directional arrows", () => {
+  const areaBody = functionBody(app, "drawPathAreas");
+  const directionBody = functionBody(app, "nearestPathSegmentDirection");
+  assert.match(app, /function nearestPathSegmentDirection/);
+  assert.match(directionBody, /distanceToPathSegment/);
+  assert.match(areaBody, /drawPathAreaArrow\(context,\s*area,\s*direction,\s*size\)/);
+  assert.match(app, /function drawPathAreaArrow/);
+});
+
+test("stage path drawing stops after the selected base is reached", () => {
+  const body = functionBody(app, "addPathPoint");
+  assert.match(app, /function pathHasReachedBase/);
+  assert.match(app, /function pointInsideMarker/);
+  assert.match(body, /if \(pathHasReachedBase\(path,\s*stage\)\) return/);
+});
+
 test("stage marker tool can select and drag existing markers", () => {
   const downBody = functionBody(app, "handlePointerDown");
   const moveBody = functionBody(app, "handlePointerMove");

@@ -857,6 +857,17 @@
     return { minX, minY, maxX, maxY };
   }
 
+  function pointInsideMarker(point, marker) {
+    if (!point || !marker) return false;
+    return point.x >= marker.x && point.y >= marker.y && point.x < marker.x + (marker.width || 1) && point.y < marker.y + (marker.height || 1);
+  }
+
+  function pathHasReachedBase(path, stage) {
+    if (!path || !stage || !path.base_id || !(path.points || []).length) return false;
+    const base = markersOfType(stage, "base").find((marker) => marker.id === path.base_id);
+    return pointInsideMarker(path.points[path.points.length - 1], base);
+  }
+
   function movePathByDelta(path, dx, dy) {
     const bounds = pathBounds(path);
     if (!bounds || (!dx && !dy)) return { dx: 0, dy: 0 };
@@ -1076,6 +1087,7 @@
   function addPathPoint(x, y) {
     const stage = ensureStage();
     const path = activePath() || createPath(stage);
+    if (pathHasReachedBase(path, stage)) return;
     const last = path.points[path.points.length - 1];
     if (!last || last.x !== x || last.y !== y) path.points.push({ x, y });
   }
@@ -1959,11 +1971,74 @@
       context.globalAlpha = pathDisplayAlpha(path, active);
       context.strokeStyle = path.id === active?.id ? "rgba(214, 104, 74, 0.86)" : "rgba(214, 104, 74, 0.42)";
       for (const area of path.areas || []) {
+        const direction = nearestPathSegmentDirection(path, area);
         context.fillRect(area.x * size + 2, area.y * size + 2, area.width * size - 4, area.height * size - 4);
         context.strokeRect(area.x * size + 4, area.y * size + 4, area.width * size - 8, area.height * size - 8);
+        drawPathAreaArrow(context, area, direction, size);
       }
     }
     context.restore();
+  }
+
+  function nearestPathSegmentDirection(path, area) {
+    const points = path.points || [];
+    if (points.length < 2) return "east";
+    const target = { x: area.x + (area.width - 1) / 2, y: area.y + (area.height - 1) / 2 };
+    let best = { distance: Infinity, direction: "east" };
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const a = points[index];
+      const b = points[index + 1];
+      const distance = distanceToPathSegment(target, a, b);
+      if (distance < best.distance) best = { distance, direction: pathSegmentDirection(a, b) };
+    }
+    return best.direction;
+  }
+
+  function pathSegmentDirection(a, b) {
+    if (a.x === b.x) return b.y >= a.y ? "south" : "north";
+    return b.x >= a.x ? "east" : "west";
+  }
+
+  function distanceToPathSegment(point, a, b) {
+    if (a.x === b.x) {
+      const minY = Math.min(a.y, b.y);
+      const maxY = Math.max(a.y, b.y);
+      const clampedY = clamp(point.y, minY, maxY);
+      return Math.hypot(point.x - a.x, point.y - clampedY);
+    }
+    if (a.y === b.y) {
+      const minX = Math.min(a.x, b.x);
+      const maxX = Math.max(a.x, b.x);
+      const clampedX = clamp(point.x, minX, maxX);
+      return Math.hypot(point.x - clampedX, point.y - a.y);
+    }
+    return Math.min(Math.hypot(point.x - a.x, point.y - a.y), Math.hypot(point.x - b.x, point.y - b.y));
+  }
+
+  function drawPathAreaArrow(context, area, direction, size) {
+    const vector = {
+      north: { x: 0, y: -1 },
+      east: { x: 1, y: 0 },
+      south: { x: 0, y: 1 },
+      west: { x: -1, y: 0 }
+    }[direction] || { x: 1, y: 0 };
+    const step = Math.max(1, Math.floor(Math.min(area.width, area.height) / 2));
+    for (let y = area.y; y < area.y + area.height; y += step) {
+      for (let x = area.x; x < area.x + area.width; x += step) {
+        const centerX = x * size + size / 2;
+        const centerY = y * size + size / 2;
+        const length = size * 0.42;
+        const ax = centerX - vector.x * length * 0.32;
+        const ay = centerY - vector.y * length * 0.32;
+        const bx = centerX + vector.x * length * 0.32;
+        const by = centerY + vector.y * length * 0.32;
+        context.beginPath();
+        context.moveTo(ax, ay);
+        context.lineTo(bx, by);
+        context.stroke();
+        drawArrowHead(context, ax, ay, bx, by, size * 0.72);
+      }
+    }
   }
 
   function drawArrowHead(context, ax, ay, bx, by, size) {
