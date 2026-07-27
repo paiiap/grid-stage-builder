@@ -156,6 +156,29 @@ test("validation allows an object marked overlap allowed to sit on a blocking ob
   assert.equal(result.errors.some((message) => message.includes("overlaps another blocking object")), false);
 });
 
+test("stage validation names the stage and object when a path hits furniture", () => {
+  const doc = core.createDocument();
+  doc.objects.push({ id: "sofa_01", category: "sofa", x: 3, y: 3, width: 2, height: 1, blocking: true });
+  doc.stages.push({
+    id: "stage_living",
+    name: "Living Test",
+    x: 0,
+    y: 0,
+    width: 8,
+    height: 8,
+    export_tile_size: 48,
+    markers: [
+      { id: "spawn_01", type: "spawn", x: 1, y: 3 },
+      { id: "base_01", type: "base", x: 6, y: 3 }
+    ],
+    paths: [
+      { id: "path_01", name: "Path 01", spawn_id: "spawn_01", base_id: "base_01", width_tiles: 1, points: [{ x: 1, y: 3 }, { x: 6, y: 3 }] }
+    ]
+  });
+  const result = core.validateDocument(doc);
+  assert(result.errors.some((message) => message.includes("stage Living Test (stage_living)") && message.includes("object sofa_01")));
+});
+
 test("stage export only includes entities inside bounds", () => {
   const doc = core.makeSampleDocument();
   doc.stages[0].markers.push({ id: "outside_slot", type: "build_slot", x: 40, y: 40, width: 1, height: 1, label: "Outside" });

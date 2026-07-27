@@ -360,12 +360,17 @@
     }
 
     const blockingCells = new Set();
+    const blockingObjectsByCell = new Map();
     for (const object of doc.objects || []) {
       for (const cell of objectFootprint(object)) {
         if (!inBounds(doc, cell.x, cell.y)) errors.push(`object ${object.id} extends outside map.`);
         const key = cellKey(cell.x, cell.y);
         if (object.blocking && !object.allow_overlap && blockingCells.has(key)) errors.push(`object ${object.id} overlaps another blocking object.`);
-        if (object.blocking && !object.allow_overlap) blockingCells.add(key);
+        if (object.blocking && !object.allow_overlap) {
+          blockingCells.add(key);
+          if (!blockingObjectsByCell.has(key)) blockingObjectsByCell.set(key, []);
+          blockingObjectsByCell.get(key).push(object.id);
+        }
       }
     }
 
@@ -374,39 +379,46 @@
       if (!inBounds(doc, marker.x, marker.y)) errors.push(`marker ${marker.id} is outside map.`);
     }
 
-    const validatePath = (path, markersForPath) => {
+    const blockingObjectLabel = (cell) => {
+      const ids = blockingObjectsByCell.get(cellKey(cell.x, cell.y)) || [];
+      return ids.length ? ` object ${ids.join(",")}` : " blocking object";
+    };
+    const stageLabel = (stage) => `${stage.name || stage.id} (${stage.id})`;
+    const pathLabel = (path, stage) => stage ? `stage ${stageLabel(stage)} path ${path.id}` : `path ${path.id}`;
+
+    const validatePath = (path, markersForPath, stage) => {
       const seen = new Set();
       const points = path.points || [];
-      if (points.length < 2) errors.push(`path ${path.id} needs at least two points.`);
+      if (points.length < 2) errors.push(`${pathLabel(path, stage)} needs at least two points.`);
       for (const point of points) {
-        if (!inBounds(doc, point.x, point.y)) errors.push(`path ${path.id} point ${point.x},${point.y} is outside map.`);
+        if (!inBounds(doc, point.x, point.y)) errors.push(`${pathLabel(path, stage)} point ${point.x},${point.y} is outside map.`);
         const key = cellKey(point.x, point.y);
-        if (seen.has(key)) warnings.push(`path ${path.id} repeats ${key}.`);
+        if (seen.has(key)) warnings.push(`${pathLabel(path, stage)} repeats ${key}.`);
         seen.add(key);
       }
       for (let index = 0; index < points.length - 1; index += 1) {
         const a = points[index];
         const b = points[index + 1];
-        if (a.x !== b.x && a.y !== b.y) errors.push(`path ${path.id} has diagonal step from ${a.x},${a.y} to ${b.x},${b.y}.`);
+        if (a.x !== b.x && a.y !== b.y) errors.push(`${pathLabel(path, stage)} has diagonal step from ${a.x},${a.y} to ${b.x},${b.y}.`);
       }
       for (const cell of rasterizePath(path)) {
-        if (!inBounds(doc, cell.x, cell.y)) errors.push(`path ${path.id} footprint leaves map at ${cell.x},${cell.y}.`);
+        if (!inBounds(doc, cell.x, cell.y)) errors.push(`${pathLabel(path, stage)} footprint leaves map at ${cell.x},${cell.y}.`);
         const tile = getTile(doc, cell.x, cell.y);
         if (tile && (tile.structure === "wall" || tile.structure === "blocked")) {
-          errors.push(`path ${path.id} collides with blocked tile ${cell.x},${cell.y}.`);
+          errors.push(`${pathLabel(path, stage)} collides with blocked tile ${cell.x},${cell.y}.`);
         }
         if (blockingCells.has(cellKey(cell.x, cell.y))) {
-          errors.push(`path ${path.id} collides with blocking object at ${cell.x},${cell.y}.`);
+          errors.push(`${pathLabel(path, stage)} collides with${blockingObjectLabel(cell)} at ${cell.x},${cell.y}.`);
         }
       }
       for (const cell of pathAreaCells(path.areas)) {
-        if (!inBounds(doc, cell.x, cell.y)) errors.push(`path ${path.id} area leaves map at ${cell.x},${cell.y}.`);
+        if (!inBounds(doc, cell.x, cell.y)) errors.push(`${pathLabel(path, stage)} area leaves map at ${cell.x},${cell.y}.`);
         const tile = getTile(doc, cell.x, cell.y);
         if (tile && (tile.structure === "wall" || tile.structure === "blocked")) {
-          errors.push(`path ${path.id} area collides with blocked tile ${cell.x},${cell.y}.`);
+          errors.push(`${pathLabel(path, stage)} area collides with blocked tile ${cell.x},${cell.y}.`);
         }
         if (blockingCells.has(cellKey(cell.x, cell.y))) {
-          errors.push(`path ${path.id} area collides with blocking object at ${cell.x},${cell.y}.`);
+          errors.push(`${pathLabel(path, stage)} area collides with${blockingObjectLabel(cell)} at ${cell.x},${cell.y}.`);
         }
       }
       if (markersForPath) {
@@ -414,12 +426,12 @@
         const baseId = pathEndpointId(path, markersForPath, "base");
         const spawn = markersForPath.find((marker) => marker.id === spawnId && marker.type === "spawn");
         const base = markersForPath.find((marker) => marker.id === baseId && marker.type === "base");
-        if (!spawnId) errors.push(`path ${path.id} needs a spawn.`);
-        if (spawnId && !spawn) errors.push(`path ${path.id} references missing spawn ${spawnId}.`);
-        if (!baseId) errors.push(`path ${path.id} needs a base.`);
-        if (baseId && !base) errors.push(`path ${path.id} references missing base ${baseId}.`);
-        if (spawn && points[0] && !markerAtPoint([spawn], "spawn", points[0])) errors.push(`path ${path.id} must start on spawn ${spawn.id}.`);
-        if (base && points[points.length - 1] && !markerAtPoint([base], "base", points[points.length - 1])) errors.push(`path ${path.id} must end on base ${base.id}.`);
+        if (!spawnId) errors.push(`${pathLabel(path, stage)} needs a spawn.`);
+        if (spawnId && !spawn) errors.push(`${pathLabel(path, stage)} references missing spawn ${spawnId}.`);
+        if (!baseId) errors.push(`${pathLabel(path, stage)} needs a base.`);
+        if (baseId && !base) errors.push(`${pathLabel(path, stage)} references missing base ${baseId}.`);
+        if (spawn && points[0] && !markerAtPoint([spawn], "spawn", points[0])) errors.push(`${pathLabel(path, stage)} must start on spawn ${spawn.id}.`);
+        if (base && points[points.length - 1] && !markerAtPoint([base], "base", points[points.length - 1])) errors.push(`${pathLabel(path, stage)} must end on base ${base.id}.`);
       }
     };
 
@@ -436,7 +448,7 @@
         if (!inBounds(doc, marker.x, marker.y)) errors.push(`marker ${marker.id} is outside map.`);
       }
       const markersForStage = stageMarkers(doc, stage);
-      for (const path of stage.paths || []) validatePath(path, markersForStage);
+      for (const path of stage.paths || []) validatePath(path, markersForStage, stage);
       for (const cell of pathAreaCells(stage.path_areas)) {
         if (!inBounds(doc, cell.x, cell.y)) errors.push(`stage ${stage.id} path area leaves map at ${cell.x},${cell.y}.`);
         const tile = getTile(doc, cell.x, cell.y);
@@ -444,7 +456,7 @@
           errors.push(`stage ${stage.id} path area collides with blocked tile ${cell.x},${cell.y}.`);
         }
         if (blockingCells.has(cellKey(cell.x, cell.y))) {
-          errors.push(`stage ${stage.id} path area collides with blocking object at ${cell.x},${cell.y}.`);
+          errors.push(`stage ${stageLabel(stage)} path area collides with${blockingObjectLabel(cell)} at ${cell.x},${cell.y}.`);
         }
       }
       const spawns = markersForStage.filter((marker) => marker.type === "spawn");
