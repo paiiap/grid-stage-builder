@@ -8,6 +8,14 @@ It started as a house-map workflow for a mobile tower defense game, but the tool
 
 ![Sample stage preview](docs/sample-stage-preview.svg)
 
+## Try Online
+
+Use the editor in your browser:
+
+<https://paiiap.github.io/grid-stage-builder/>
+
+No install step is required.
+
 ## What It Does
 
 - Build a full master map on a fixed 48 x 48 grid.
@@ -58,6 +66,8 @@ The top toolbar uses project language because a saved project includes both map 
 - `Load Sample` restores the built-in sample layout.
 
 The editor also saves the current project in browser `localStorage` while you work.
+
+The sample project is also available as `examples/sample-project.json`.
 
 ## Stage Export
 
