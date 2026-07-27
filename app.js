@@ -7,14 +7,14 @@
   const THEME_CHOICES = new Set(["classic", "dark", "sweet"]);
   const GRID_MAJOR_EVERY = 5;
   const ROOM_TYPE_PRESETS = {
-    living_room: { id: "living_room", name: "ห้องนั่งเล่น", color: "#2f8f73", terrain: "indoor_floor" },
-    kitchen: { id: "kitchen", name: "ครัว", color: "#c27a34", terrain: "indoor_floor" },
-    dining_room: { id: "dining_room", name: "ห้องกินข้าว", color: "#b69535", terrain: "indoor_floor" },
-    bedroom: { id: "bedroom", name: "ห้องนอน", color: "#5e82c4", terrain: "indoor_floor" },
-    bathroom: { id: "bathroom", name: "ห้องน้ำ", color: "#4aa0b5", terrain: "indoor_floor" },
-    cat_room: { id: "cat_room", name: "ห้องแมว", color: "#b0659f", terrain: "indoor_floor" },
-    garden: { id: "garden", name: "สวน", color: "#4f9b58", terrain: "garden" },
-    balcony: { id: "balcony", name: "ระเบียงบ้าน", color: "#9f7b4f", terrain: "outdoor_ground" }
+    living_room: { id: "living_room", name: "Living Room", color: "#2f8f73", terrain: "indoor_floor" },
+    kitchen: { id: "kitchen", name: "Kitchen", color: "#c27a34", terrain: "indoor_floor" },
+    dining_room: { id: "dining_room", name: "Dining Room", color: "#b69535", terrain: "indoor_floor" },
+    bedroom: { id: "bedroom", name: "Bedroom", color: "#5e82c4", terrain: "indoor_floor" },
+    bathroom: { id: "bathroom", name: "Bathroom", color: "#4aa0b5", terrain: "indoor_floor" },
+    cat_room: { id: "cat_room", name: "Cat Room", color: "#b0659f", terrain: "indoor_floor" },
+    garden: { id: "garden", name: "Garden", color: "#4f9b58", terrain: "garden" },
+    balcony: { id: "balcony", name: "Balcony", color: "#9f7b4f", terrain: "outdoor_ground" }
   };
   const TOOL_SHORTCUTS = {
     v: "select",
@@ -48,61 +48,61 @@
     "1:1": { width: 1, height: 1 }
   };
   const objectCategoryLabels = {
-    sofa: "โซฟา",
-    coffee_table: "โต๊ะกลาง",
-    tv: "ทีวี",
-    tv_stand: "ชั้นวางทีวี",
-    rug: "พรม",
-    bookshelf: "ชั้นหนังสือ",
-    armchair: "เก้าอี้เดี่ยว",
-    floor_lamp: "โคมไฟ",
-    bed: "เตียง",
-    nightstand: "โต๊ะหัวเตียง",
-    vanity: "โต๊ะเครื่องแป้ง",
-    laundry_basket: "ตะกร้าผ้า",
-    door: "ประตู",
-    window: "หน้าต่าง",
-    table: "โต๊ะ",
-    dining_table: "โต๊ะกินข้าว",
-    dining_chair: "เก้าอี้",
-    display_cabinet: "ตู้โชว์",
-    serving_cart: "รถเข็นอาหาร",
-    fridge: "ตู้เย็น",
-    sink: "อ่างล้างจาน",
-    stove: "เตา",
-    kitchen_counter: "เคาน์เตอร์ครัว",
-    kitchen_island: "เกาะกลางครัว",
-    trash_bin: "ถังขยะ",
-    storage_shelf: "ชั้นเก็บของ",
-    cat_bowl: "ชามอาหารแมว",
-    tub: "อ่างอาบน้ำ",
-    toilet: "โถส้วม",
-    shower: "ฝักบัว",
-    medicine_cabinet: "ตู้ยา",
-    towel_shelf: "ชั้นผ้าเช็ดตัว",
-    bath_mat: "พรมห้องน้ำ",
-    closet: "ตู้เสื้อผ้า",
-    cat_tree: "คอนโดแมว",
-    litter_box: "กระบะทราย",
-    cat_bed: "ที่นอนแมว",
-    cat_toy: "ของเล่นแมว",
-    scratching_post: "เสาลับเล็บ",
-    cat_tunnel: "อุโมงค์แมว",
-    plant: "ต้นไม้",
-    potted_plant: "กระถาง",
-    bush: "พุ่มไม้",
-    garden_table: "โต๊ะสนาม",
-    garden_chair: "เก้าอี้สนาม",
-    small_fountain: "น้ำพุเล็ก",
-    stepping_stone: "หินทางเดิน",
-    low_fence: "รั้วเตี้ย",
-    balcony_chair: "เก้าอี้ระเบียง",
-    small_table: "โต๊ะเล็ก",
-    balcony_rail: "ราวระเบียง",
-    mat: "เสื่อ",
-    storage_box: "กล่องเก็บของ",
-    decoration: "ของตกแต่ง",
-    gameplay_obstacle: "สิ่งกีดขวาง"
+    sofa: "Sofa",
+    coffee_table: "Coffee Table",
+    tv: "TV",
+    tv_stand: "TV Stand",
+    rug: "Rug",
+    bookshelf: "Bookshelf",
+    armchair: "Armchair",
+    floor_lamp: "Floor Lamp",
+    bed: "Bed",
+    nightstand: "Nightstand",
+    vanity: "Vanity",
+    laundry_basket: "Laundry Basket",
+    door: "Door",
+    window: "Window",
+    table: "Table",
+    dining_table: "Dining Table",
+    dining_chair: "Chair",
+    display_cabinet: "Display Cabinet",
+    serving_cart: "Serving Cart",
+    fridge: "Fridge",
+    sink: "Sink",
+    stove: "Stove",
+    kitchen_counter: "Kitchen Counter",
+    kitchen_island: "Kitchen Island",
+    trash_bin: "Trash Bin",
+    storage_shelf: "Storage Shelf",
+    cat_bowl: "Cat Bowl",
+    tub: "Tub",
+    toilet: "Toilet",
+    shower: "Shower",
+    medicine_cabinet: "Medicine Cabinet",
+    towel_shelf: "Towel Shelf",
+    bath_mat: "Bath Mat",
+    closet: "Closet",
+    cat_tree: "Cat Tower",
+    litter_box: "Litter Box",
+    cat_bed: "Cat Bed",
+    cat_toy: "Cat Toy",
+    scratching_post: "Scratching Post",
+    cat_tunnel: "Cat Tunnel",
+    plant: "Plant",
+    potted_plant: "Potted Plant",
+    bush: "Bush",
+    garden_table: "Garden Table",
+    garden_chair: "Garden Chair",
+    small_fountain: "Small Fountain",
+    stepping_stone: "Stepping Stone",
+    low_fence: "Low Fence",
+    balcony_chair: "Balcony Chair",
+    small_table: "Small Table",
+    balcony_rail: "Balcony Rail",
+    mat: "Mat",
+    storage_box: "Storage Box",
+    decoration: "Decoration",
+    gameplay_obstacle: "Obstacle"
   };
   const objectCategoryDefaults = {
     sofa: { width: 3, height: 2, facing: "south" },
@@ -163,67 +163,67 @@
   };
   const DEFAULT_ROOM_DEFINITIONS = Object.values(ROOM_TYPE_PRESETS).map((room) => Object.assign({}, room));
   const DEFAULT_OBJECT_DEFINITIONS = [
-    { room_id: "common", id: "door", name: "ประตู" },
-    { room_id: "common", id: "window", name: "หน้าต่าง" },
-    { room_id: "common", id: "plant", name: "ต้นไม้" },
-    { room_id: "common", id: "decoration", name: "ของตกแต่ง" },
-    { room_id: "common", id: "gameplay_obstacle", name: "สิ่งกีดขวาง" },
-    { room_id: "living_room", id: "sofa", name: "โซฟา" },
-    { room_id: "living_room", id: "coffee_table", name: "โต๊ะกลาง" },
-    { room_id: "living_room", id: "tv", name: "ทีวี" },
-    { room_id: "living_room", id: "tv_stand", name: "ชั้นวางทีวี" },
-    { room_id: "living_room", id: "rug", name: "พรม" },
-    { room_id: "living_room", id: "bookshelf", name: "ชั้นหนังสือ" },
-    { room_id: "living_room", id: "armchair", name: "เก้าอี้เดี่ยว" },
-    { room_id: "living_room", id: "floor_lamp", name: "โคมไฟ" },
-    { room_id: "kitchen", id: "fridge", name: "ตู้เย็น" },
-    { room_id: "kitchen", id: "sink", name: "อ่างล้างจาน" },
-    { room_id: "kitchen", id: "stove", name: "เตา" },
-    { room_id: "kitchen", id: "kitchen_counter", name: "เคาน์เตอร์ครัว" },
-    { room_id: "kitchen", id: "kitchen_island", name: "เกาะกลางครัว" },
-    { room_id: "kitchen", id: "trash_bin", name: "ถังขยะ" },
-    { room_id: "kitchen", id: "storage_shelf", name: "ชั้นเก็บของ" },
-    { room_id: "kitchen", id: "cat_bowl", name: "ชามอาหารแมว" },
-    { room_id: "dining_room", id: "dining_table", name: "โต๊ะกินข้าว" },
-    { room_id: "dining_room", id: "dining_chair", name: "เก้าอี้" },
-    { room_id: "dining_room", id: "display_cabinet", name: "ตู้โชว์" },
-    { room_id: "dining_room", id: "serving_cart", name: "รถเข็นอาหาร" },
-    { room_id: "dining_room", id: "rug", name: "พรม" },
-    { room_id: "bedroom", id: "bed", name: "เตียง" },
-    { room_id: "bedroom", id: "nightstand", name: "โต๊ะหัวเตียง" },
-    { room_id: "bedroom", id: "closet", name: "ตู้เสื้อผ้า" },
-    { room_id: "bedroom", id: "vanity", name: "โต๊ะเครื่องแป้ง" },
-    { room_id: "bedroom", id: "floor_lamp", name: "โคมไฟ" },
-    { room_id: "bedroom", id: "rug", name: "พรม" },
-    { room_id: "bedroom", id: "laundry_basket", name: "ตะกร้าผ้า" },
-    { room_id: "bathroom", id: "tub", name: "อ่างอาบน้ำ" },
-    { room_id: "bathroom", id: "toilet", name: "โถส้วม" },
-    { room_id: "bathroom", id: "sink", name: "อ่างล้างจาน" },
-    { room_id: "bathroom", id: "shower", name: "ฝักบัว" },
-    { room_id: "bathroom", id: "medicine_cabinet", name: "ตู้ยา" },
-    { room_id: "bathroom", id: "towel_shelf", name: "ชั้นผ้าเช็ดตัว" },
-    { room_id: "bathroom", id: "bath_mat", name: "พรมห้องน้ำ" },
-    { room_id: "cat_room", id: "cat_tree", name: "คอนโดแมว" },
-    { room_id: "cat_room", id: "litter_box", name: "กระบะทราย" },
-    { room_id: "cat_room", id: "cat_bowl", name: "ชามอาหารแมว" },
-    { room_id: "cat_room", id: "cat_bed", name: "ที่นอนแมว" },
-    { room_id: "cat_room", id: "cat_toy", name: "ของเล่นแมว" },
-    { room_id: "cat_room", id: "scratching_post", name: "เสาลับเล็บ" },
-    { room_id: "cat_room", id: "cat_tunnel", name: "อุโมงค์แมว" },
-    { room_id: "garden", id: "plant", name: "ต้นไม้" },
-    { room_id: "garden", id: "potted_plant", name: "กระถาง" },
-    { room_id: "garden", id: "bush", name: "พุ่มไม้" },
-    { room_id: "garden", id: "garden_table", name: "โต๊ะสนาม" },
-    { room_id: "garden", id: "garden_chair", name: "เก้าอี้สนาม" },
-    { room_id: "garden", id: "small_fountain", name: "น้ำพุเล็ก" },
-    { room_id: "garden", id: "stepping_stone", name: "หินทางเดิน" },
-    { room_id: "garden", id: "low_fence", name: "รั้วเตี้ย" },
-    { room_id: "balcony", id: "balcony_chair", name: "เก้าอี้ระเบียง" },
-    { room_id: "balcony", id: "small_table", name: "โต๊ะเล็ก" },
-    { room_id: "balcony", id: "potted_plant", name: "กระถาง" },
-    { room_id: "balcony", id: "balcony_rail", name: "ราวระเบียง" },
-    { room_id: "balcony", id: "mat", name: "เสื่อ" },
-    { room_id: "balcony", id: "storage_box", name: "กล่องเก็บของ" }
+    { room_id: "common", id: "door", name: "Door" },
+    { room_id: "common", id: "window", name: "Window" },
+    { room_id: "common", id: "plant", name: "Plant" },
+    { room_id: "common", id: "decoration", name: "Decoration" },
+    { room_id: "common", id: "gameplay_obstacle", name: "Obstacle" },
+    { room_id: "living_room", id: "sofa", name: "Sofa" },
+    { room_id: "living_room", id: "coffee_table", name: "Coffee Table" },
+    { room_id: "living_room", id: "tv", name: "TV" },
+    { room_id: "living_room", id: "tv_stand", name: "TV Stand" },
+    { room_id: "living_room", id: "rug", name: "Rug" },
+    { room_id: "living_room", id: "bookshelf", name: "Bookshelf" },
+    { room_id: "living_room", id: "armchair", name: "Armchair" },
+    { room_id: "living_room", id: "floor_lamp", name: "Floor Lamp" },
+    { room_id: "kitchen", id: "fridge", name: "Fridge" },
+    { room_id: "kitchen", id: "sink", name: "Sink" },
+    { room_id: "kitchen", id: "stove", name: "Stove" },
+    { room_id: "kitchen", id: "kitchen_counter", name: "Kitchen Counter" },
+    { room_id: "kitchen", id: "kitchen_island", name: "Kitchen Island" },
+    { room_id: "kitchen", id: "trash_bin", name: "Trash Bin" },
+    { room_id: "kitchen", id: "storage_shelf", name: "Storage Shelf" },
+    { room_id: "kitchen", id: "cat_bowl", name: "Cat Bowl" },
+    { room_id: "dining_room", id: "dining_table", name: "Dining Table" },
+    { room_id: "dining_room", id: "dining_chair", name: "Chair" },
+    { room_id: "dining_room", id: "display_cabinet", name: "Display Cabinet" },
+    { room_id: "dining_room", id: "serving_cart", name: "Serving Cart" },
+    { room_id: "dining_room", id: "rug", name: "Rug" },
+    { room_id: "bedroom", id: "bed", name: "Bed" },
+    { room_id: "bedroom", id: "nightstand", name: "Nightstand" },
+    { room_id: "bedroom", id: "closet", name: "Closet" },
+    { room_id: "bedroom", id: "vanity", name: "Vanity" },
+    { room_id: "bedroom", id: "floor_lamp", name: "Floor Lamp" },
+    { room_id: "bedroom", id: "rug", name: "Rug" },
+    { room_id: "bedroom", id: "laundry_basket", name: "Laundry Basket" },
+    { room_id: "bathroom", id: "tub", name: "Tub" },
+    { room_id: "bathroom", id: "toilet", name: "Toilet" },
+    { room_id: "bathroom", id: "sink", name: "Sink" },
+    { room_id: "bathroom", id: "shower", name: "Shower" },
+    { room_id: "bathroom", id: "medicine_cabinet", name: "Medicine Cabinet" },
+    { room_id: "bathroom", id: "towel_shelf", name: "Towel Shelf" },
+    { room_id: "bathroom", id: "bath_mat", name: "Bath Mat" },
+    { room_id: "cat_room", id: "cat_tree", name: "Cat Tower" },
+    { room_id: "cat_room", id: "litter_box", name: "Litter Box" },
+    { room_id: "cat_room", id: "cat_bowl", name: "Cat Bowl" },
+    { room_id: "cat_room", id: "cat_bed", name: "Cat Bed" },
+    { room_id: "cat_room", id: "cat_toy", name: "Cat Toy" },
+    { room_id: "cat_room", id: "scratching_post", name: "Scratching Post" },
+    { room_id: "cat_room", id: "cat_tunnel", name: "Cat Tunnel" },
+    { room_id: "garden", id: "plant", name: "Plant" },
+    { room_id: "garden", id: "potted_plant", name: "Potted Plant" },
+    { room_id: "garden", id: "bush", name: "Bush" },
+    { room_id: "garden", id: "garden_table", name: "Garden Table" },
+    { room_id: "garden", id: "garden_chair", name: "Garden Chair" },
+    { room_id: "garden", id: "small_fountain", name: "Small Fountain" },
+    { room_id: "garden", id: "stepping_stone", name: "Stepping Stone" },
+    { room_id: "garden", id: "low_fence", name: "Low Fence" },
+    { room_id: "balcony", id: "balcony_chair", name: "Balcony Chair" },
+    { room_id: "balcony", id: "small_table", name: "Small Table" },
+    { room_id: "balcony", id: "potted_plant", name: "Potted Plant" },
+    { room_id: "balcony", id: "balcony_rail", name: "Balcony Rail" },
+    { room_id: "balcony", id: "mat", name: "Mat" },
+    { room_id: "balcony", id: "storage_box", name: "Storage Box" }
   ];
   const canvas = document.getElementById("mapCanvas");
   const ctx = canvas.getContext("2d");
@@ -1444,7 +1444,7 @@
     const object = selectedObject();
     if (!object) {
       elements.selectedDoorFields.hidden = true;
-      elements.selectedObjectSummary.textContent = "ยังไม่ได้เลือกสิ่งของ";
+      elements.selectedObjectSummary.textContent = "No object selected";
       return;
     }
     elements.selectedDoorFields.hidden = object.category !== "door";
@@ -1539,8 +1539,8 @@
   function renderPathEndpointSelects() {
     const stage = ensureStage();
     const path = activePath();
-    fillMarkerSelect(elements.pathSpawn, markersOfType(stage, "spawn"), path?.spawn_id || "", "เลือก Spawn");
-    fillMarkerSelect(elements.pathBase, markersOfType(stage, "base"), path?.base_id || "", "เลือก Base");
+    fillMarkerSelect(elements.pathSpawn, markersOfType(stage, "spawn"), path?.spawn_id || "", "Select Spawn");
+    fillMarkerSelect(elements.pathBase, markersOfType(stage, "base"), path?.base_id || "", "Select Base");
     elements.pathSpawn.disabled = !path;
     elements.pathBase.disabled = !path;
   }
@@ -1697,7 +1697,7 @@
     pushHistory();
     const id = uniqueId(`room_${state.doc.room_definitions.length + 1}`, new Set(state.doc.room_definitions.map((room) => room.id)));
     const color = ["#2f8f73", "#c27a34", "#5e82c4", "#b0659f", "#4aa0b5", "#9f7b4f"][state.doc.room_definitions.length % 6];
-    state.doc.room_definitions.push({ id, name: `ห้องใหม่ ${state.doc.room_definitions.length + 1}`, type: id, color, terrain: "indoor_floor" });
+    state.doc.room_definitions.push({ id, name: `New Room ${state.doc.room_definitions.length + 1}`, type: id, color, terrain: "indoor_floor" });
     elements.roomType.value = id;
     elements.objectRoomType.value = id;
     afterChange(true);
@@ -1738,7 +1738,7 @@
     const roomId = elements.objectRoomType.value || activeRoomDefinition().id;
     const usedIds = new Set(state.doc.object_definitions.map((definition) => definition.id));
     const id = uniqueId(`object_${state.doc.object_definitions.length + 1}`, usedIds);
-    const name = `สิ่งของใหม่ ${objectDefinitionsForRoom(roomId).filter((definition) => definition.room_id === roomId).length + 1}`;
+    const name = `New Object ${objectDefinitionsForRoom(roomId).filter((definition) => definition.room_id === roomId).length + 1}`;
     state.doc.object_definitions.push({ room_id: roomId, id, name });
     elements.objectCategory.value = id;
     afterChange(true);

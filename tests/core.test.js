@@ -23,7 +23,7 @@ test("createDocument keeps the active map in a map collection", () => {
 
 test("createDocument includes editable room and object definitions", () => {
   const doc = core.createDocument();
-  assert(doc.room_definitions.some((room) => room.id === "living_room" && room.name === "ห้องนั่งเล่น"));
+  assert(doc.room_definitions.some((room) => room.id === "living_room" && room.name === "Living Room"));
   assert(doc.object_definitions.some((object) => object.room_id === "living_room" && object.id === "sofa"));
   assert(doc.object_definitions.some((object) => object.room_id === "common" && object.id === "door"));
   assert.deepEqual(doc.maps[0].room_definitions, doc.room_definitions);

@@ -63,8 +63,8 @@ Each stage can be exported separately.
 
 Available stage exports:
 
-- `JSON เกม` for game/runtime data.
-- `Prompt ภาพ` for image-generation prompt text.
+- `Game JSON` for game/runtime data.
+- `Image Prompt` for image-generation prompt text.
 - `PNG Preview` for a visual block-grid preview.
 
 Stage JSON is cropped to the stage area and includes only the relevant tiles, rooms, objects, markers, and paths used by that stage.

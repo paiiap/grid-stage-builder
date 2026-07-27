@@ -6,6 +6,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const app = fs.readFileSync(path.join(root, "app.js"), "utf8");
+const coreSource = fs.readFileSync(path.join(root, "core.js"), "utf8");
 const css = fs.readFileSync(path.join(root, "styles.css"), "utf8");
 
 function functionBody(source, name) {
@@ -21,11 +22,17 @@ function functionBody(source, name) {
   throw new Error(`unterminated function ${name}`);
 }
 
-test("toolbox uses Thai labels with keyboard shortcut hints", () => {
-  assert.match(html, /data-tool="select"[\s\S]*<kbd>V<\/kbd>[\s\S]*เลือก/);
-  assert.match(html, /data-tool="tile"[\s\S]*<kbd>T<\/kbd>[\s\S]*ระบาย/);
-  assert.match(html, /data-tool="room"[\s\S]*<kbd>R<\/kbd>[\s\S]*ห้อง/);
-  assert.match(html, /data-tool="path"[\s\S]*<kbd>P<\/kbd>[\s\S]*ทางเดิน/);
+test("program copy is English only", () => {
+  assert.doesNotMatch(html, /[ก-๙]/);
+  assert.doesNotMatch(app, /[ก-๙]/);
+  assert.doesNotMatch(coreSource, /[ก-๙]/);
+});
+
+test("toolbox uses English labels with keyboard shortcut hints", () => {
+  assert.match(html, /data-tool="select"[\s\S]*<kbd>V<\/kbd>[\s\S]*Select/);
+  assert.match(html, /data-tool="tile"[\s\S]*<kbd>T<\/kbd>[\s\S]*Paint/);
+  assert.match(html, /data-tool="room"[\s\S]*<kbd>R<\/kbd>[\s\S]*Rooms/);
+  assert.match(html, /data-tool="path"[\s\S]*<kbd>P<\/kbd>[\s\S]*Path/);
 });
 
 test("app uses neutral Grid Stage Builder branding", () => {
@@ -66,9 +73,9 @@ test("app applies and persists selectable themes", () => {
   assert(app.includes('querySelectorAll("[data-theme-choice]")'));
 });
 
-test("paint panel exposes Thai named buttons instead of visible selects", () => {
-  assert.match(html, /data-paint-target="structure"[\s\S]*กำแพง/);
-  assert.match(html, /data-paint-target="build"[\s\S]*วางได้/);
+test("paint panel exposes English named buttons instead of visible selects", () => {
+  assert.match(html, /data-paint-target="structure"[\s\S]*Wall/);
+  assert.match(html, /data-paint-target="build"[\s\S]*Allowed/);
   assert.match(html, /class="paint-value"[^>]+id="structureInput"/);
   assert.match(html, /class="paint-value"[^>]+id="buildInput"/);
   assert.doesNotMatch(html, /data-paint-target="terrain"/);
@@ -131,9 +138,9 @@ test("map manager is shown below selection and manages multiple maps", () => {
   assert(html.indexOf('data-panel="status"') < html.indexOf('data-panel="map-manager"'));
   assert.match(html, /data-panel="map-manager"[\s\S]*id="mapList"/);
   assert.match(html, /id="mapNameInput"/);
-  assert.match(html, /id="addMapBtn"[\s\S]*แผนที่ใหม่/);
-  assert.match(html, /id="duplicateMapBtn"[\s\S]*คัดลอก/);
-  assert.match(html, /id="deleteMapBtn"[\s\S]*ลบ/);
+  assert.match(html, /id="addMapBtn"[\s\S]*New Map/);
+  assert.match(html, /id="duplicateMapBtn"[\s\S]*Duplicate/);
+  assert.match(html, /id="deleteMapBtn"[\s\S]*Delete/);
   assert.match(app, /mapList:\s*document\.getElementById\("mapList"\)/);
   assert.match(app, /function normalizeMaps/);
   assert.match(app, /function setActiveMapId/);
@@ -145,7 +152,7 @@ test("map manager is shown below selection and manages multiple maps", () => {
 });
 
 test("map manager imports and exports selected map bundles", () => {
-  assert.match(html, /id="exportMapsBtn"[\s\S]*Export เลือก/);
+  assert.match(html, /id="exportMapsBtn"[\s\S]*Export Selected/);
   assert.match(html, /id="importMapsBtn"[\s\S]*Import maps/);
   assert.match(html, /id="mapBundleInput"[\s\S]*multiple/);
   assert.match(app, /selectedMapIds:\s*new Set\(\)/);
@@ -170,11 +177,11 @@ test("rectangle tool has drag preview and commits on pointer release", () => {
 test("room panel only exposes room type and uses preset colors", () => {
   assert.doesNotMatch(html, /Room ID <input/);
   assert.doesNotMatch(html, /Color <input id="roomColorInput"/);
-  assert.match(html, /<h2>ห้อง<\/h2>/);
+  assert.match(html, /<h2>Rooms<\/h2>/);
   assert.match(html, /id="roomList"/);
   assert.match(html, /id="roomNameInput"/);
-  assert.match(html, /id="addRoomBtn"[\s\S]*\+ ห้อง/);
-  assert.match(html, /id="deleteRoomBtn"[\s\S]*ลบ/);
+  assert.match(html, /id="addRoomBtn"[\s\S]*\+ Room/);
+  assert.match(html, /id="deleteRoomBtn"[\s\S]*Delete/);
   assert.match(app, /ROOM_TYPE_PRESETS/);
   assert.match(app, /living_room:\s*\{[\s\S]*color:\s*"#/);
   assert.match(app, /room\.color \|\| preset\.color/);
@@ -184,20 +191,20 @@ test("room panel only exposes room type and uses preset colors", () => {
 test("room type list removes hallway and entire house and adds cat room", () => {
   assert.doesNotMatch(html, /value="hallway"/);
   assert.doesNotMatch(html, /value="entire_house"/);
-  assert.match(app, /cat_room:\s*\{[\s\S]*name:\s*"ห้องแมว"/);
-  assert.match(app, /cat_room:\s*\{[\s\S]*name:\s*"ห้องแมว"/);
+  assert.match(app, /cat_room:\s*\{[\s\S]*name:\s*"Cat Room"/);
+  assert.match(app, /cat_room:\s*\{[\s\S]*name:\s*"Cat Room"/);
   assert.doesNotMatch(app, /hallway:\s*\{/);
   assert.doesNotMatch(app, /entire_house:\s*\{/);
 });
 
 test("object inspector supports facing and door-specific controls", () => {
   assert.match(html, /id="objectFacingInput"/);
-  assert.match(html, /value="north"[\s\S]*เหนือ/);
-  assert.match(app, /door:\s*"ประตู"/);
+  assert.match(html, /value="north"[\s\S]*North/);
+  assert.match(app, /door:\s*"Door"/);
   assert.match(app, /room_id:\s*"common"[\s\S]*id:\s*"door"/);
-  assert.match(html, /id="doorTypeInput"[\s\S]*บานเปิด[\s\S]*บานเลื่อน/);
-  assert.match(html, /id="doorSwingInput"[\s\S]*เปิดเข้า[\s\S]*เปิดออก/);
-  assert.match(html, /id="doorOpenStateInput"[\s\S]*เปิด[\s\S]*ปิด/);
+  assert.match(html, /id="doorTypeInput"[\s\S]*Hinged[\s\S]*Sliding/);
+  assert.match(html, /id="doorSwingInput"[\s\S]*Swing in[\s\S]*Swing out/);
+  assert.match(html, /id="doorOpenStateInput"[\s\S]*Open[\s\S]*Closed/);
 });
 
 test("object inspector uses category buttons with editable catalog names", () => {
@@ -227,8 +234,8 @@ test("object catalog is grouped by selected room type", () => {
 test("object panel exposes its own room selector for object catalog", () => {
   assert.match(html, /id="objectRoomList"/);
   assert.match(html, /id="objectNameInput"/);
-  assert.match(html, /id="addObjectDefinitionBtn"[\s\S]*\+ สิ่งของ/);
-  assert.match(html, /id="deleteObjectDefinitionBtn"[\s\S]*ลบ/);
+  assert.match(html, /id="addObjectDefinitionBtn"[\s\S]*\+ Object/);
+  assert.match(html, /id="deleteObjectDefinitionBtn"[\s\S]*Delete/);
   assert.match(app, /objectRoomType:\s*document\.getElementById\("objectRoomTypeInput"\)/);
   assert.match(app, /const roomId = elements\.objectRoomType\.value/);
   assert.match(app, /elements\.objectRoomType\.addEventListener\("change",[\s\S]*renderObjectPalette/);
@@ -313,7 +320,7 @@ test("selected object details edit the placed object live", () => {
   assert.match(html, /id="selectedObjectWidthInput"/);
   assert.match(html, /id="selectedObjectHeightInput"/);
   assert.match(html, /id="selectedObjectFacingInput"/);
-  assert.match(html, /id="selectedObjectOverlapInput"[\s\S]*ซ้อนทับได้/);
+  assert.match(html, /id="selectedObjectOverlapInput"[\s\S]*Allow overlap/);
   assert.match(html, /class="field-row selected-door-fields" hidden/);
   assert.match(app, /syncSelectedObjectFields/);
   assert.match(app, /updateSelectedObjectFromFields/);
@@ -334,8 +341,8 @@ test("door renderer uses clearer hinged and sliding symbols", () => {
 });
 
 test("door hinge corner can be changed after placement", () => {
-  assert.match(html, /id="doorHingeInput"[\s\S]*มุมเริ่ม[\s\S]*มุมปลาย/);
-  assert.match(html, /id="selectedDoorHingeInput"[\s\S]*มุมเริ่ม[\s\S]*มุมปลาย/);
+  assert.match(html, /id="doorHingeInput"[\s\S]*Start corner[\s\S]*End corner/);
+  assert.match(html, /id="selectedDoorHingeInput"[\s\S]*Start corner[\s\S]*End corner/);
   assert.match(app, /door_hinge:\s*elements\.doorHinge\.value/);
   assert.match(app, /elements\.selectedDoorHinge\.value = object\.door_hinge \|\| "start"/);
   assert.match(app, /object\.door_hinge = elements\.selectedDoorHinge\.value/);
@@ -346,7 +353,7 @@ test("paint panel removes terrain and keeps doors as objects only", () => {
   assert.doesNotMatch(html, /data-paint-target="terrain"/);
   assert.doesNotMatch(html, /id="terrainInput"/);
   assert.doesNotMatch(html, /data-paint-target="structure" data-paint-value="door"/);
-  assert.match(app, /door:\s*"ประตู"/);
+  assert.match(app, /door:\s*"Door"/);
   assert.match(app, /room_id:\s*"common"[\s\S]*id:\s*"door"/);
   assert.doesNotMatch(app, /terrain:\s*document\.getElementById\("terrainInput"\)/);
   assert.doesNotMatch(app, /terrain:\s*elements\.terrain\.value/);
@@ -363,23 +370,23 @@ test("erase tool removes objects before touching tile terrain", () => {
 
 test("room types use garden and balcony as room-driven terrain presets", () => {
   assert.doesNotMatch(html, /value="backyard"/);
-  assert.match(app, /garden:\s*\{[\s\S]*name:\s*"สวน"/);
-  assert.match(app, /balcony:\s*\{[\s\S]*name:\s*"ระเบียงบ้าน"/);
-  assert.match(app, /garden:\s*\{[\s\S]*name:\s*"สวน"[\s\S]*terrain:\s*"garden"/);
-  assert.match(app, /balcony:\s*\{[\s\S]*name:\s*"ระเบียงบ้าน"[\s\S]*terrain:\s*"outdoor_ground"/);
+  assert.match(app, /garden:\s*\{[\s\S]*name:\s*"Garden"/);
+  assert.match(app, /balcony:\s*\{[\s\S]*name:\s*"Balcony"/);
+  assert.match(app, /garden:\s*\{[\s\S]*name:\s*"Garden"[\s\S]*terrain:\s*"garden"/);
+  assert.match(app, /balcony:\s*\{[\s\S]*name:\s*"Balcony"[\s\S]*terrain:\s*"outdoor_ground"/);
 });
 
 test("stage manager exposes stage list ratio and export direction controls", () => {
   assert.match(html, /data-panel="stage-list"[\s\S]*id="stageList"/);
-  assert.match(html, /id="addStageBtn"[\s\S]*ด่านใหม่/);
-  assert.match(html, /id="duplicateStageBtn"[\s\S]*คัดลอก/);
-  assert.match(html, /id="deleteStageBtn"[\s\S]*ลบ/);
+  assert.match(html, /id="addStageBtn"[\s\S]*New Stage/);
+  assert.match(html, /id="duplicateStageBtn"[\s\S]*Duplicate/);
+  assert.match(html, /id="deleteStageBtn"[\s\S]*Delete/);
   assert.match(html, /id="stageDetailControls"/);
   assert.doesNotMatch(html, /Stage ID/);
   assert.match(html, /id="stageIdInput" type="hidden"/);
-  assert.match(html, /ชื่อด่าน <input id="stageNameInput"/);
+  assert.match(html, /Stage name <input id="stageNameInput"/);
   assert.match(html, /id="stageRatioInput"[\s\S]*9:16[\s\S]*4:3[\s\S]*16:9[\s\S]*1:1[\s\S]*custom/);
-  assert.match(html, /id="stageTopDirectionInput"[\s\S]*เหนือ[\s\S]*ตะวันออก[\s\S]*ใต้[\s\S]*ตะวันตก/);
+  assert.match(html, /id="stageTopDirectionInput"[\s\S]*North[\s\S]*East[\s\S]*South[\s\S]*West/);
   assert.match(app, /renderStageList/);
   assert.match(app, /setActiveStageId/);
   assert.match(app, /applyStageRatio/);
@@ -432,9 +439,9 @@ test("stage gameplay uses the active stage instead of master marker and path arr
 test("stage path width controls default to one tile and update the active path", () => {
   assert.match(html, /id="pathWidthInput"[^>]+min="1"[^>]+max="6"[^>]+value="1"/);
   assert.match(html, /id="pathWidthControls"/);
-  assert.match(html, /data-path-width="1"[\s\S]*1 ช่อง/);
-  assert.match(html, /data-path-width="2"[\s\S]*2 ช่อง/);
-  assert.match(html, /data-path-width="3"[\s\S]*3 ช่อง/);
+  assert.match(html, /data-path-width="1"[\s\S]*1 Tile/);
+  assert.match(html, /data-path-width="2"[\s\S]*2 Tiles/);
+  assert.match(html, /data-path-width="3"[\s\S]*3 Tiles/);
   assert.match(app, /pathWidth:\s*document\.getElementById\("pathWidthInput"\)/);
   assert.match(app, /function syncPathWidthField/);
   assert.match(app, /function updatePathWidthFromField/);
@@ -449,8 +456,8 @@ test("stage mode can select add and delete multiple paths", () => {
   assert.match(html, /id="pathSelectInput"/);
   assert.match(html, /id="pathSpawnInput"/);
   assert.match(html, /id="pathBaseInput"/);
-  assert.match(html, /id="addPathBtn"[\s\S]*ทางใหม่/);
-  assert.match(html, /id="deletePathBtn"[\s\S]*ลบทาง/);
+  assert.match(html, /id="addPathBtn"[\s\S]*New Path/);
+  assert.match(html, /id="deletePathBtn"[\s\S]*Delete Path/);
   assert.match(app, /pathSelect:\s*document\.getElementById\("pathSelectInput"\)/);
   assert.match(app, /pathSpawn:\s*document\.getElementById\("pathSpawnInput"\)/);
   assert.match(app, /pathBase:\s*document\.getElementById\("pathBaseInput"\)/);
@@ -537,7 +544,7 @@ test("global pointer release does not rebuild panels when no canvas drag is acti
 });
 
 test("stage mode can drag rectangular path area expansions", () => {
-  assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="path_area"[\s\S]*ขยายทางเดิน/);
+  assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="path_area"[\s\S]*Expand path/);
   assert.match(app, /x:\s*"path_area"/);
   assert.match(app, /STAGE_MODE_TOOLS[\s\S]*"path_area"/);
   assert.match(app, /function addPathArea/);
@@ -609,11 +616,11 @@ test("stage mode exposes preview and export panel", () => {
   assert.match(html, /data-mode-panel="stage"[\s\S]*data-panel="stage-preview"/);
   assert.match(html, /id="stagePreviewSummary"/);
   assert.match(html, /id="stagePreviewStats"/);
-  assert.match(html, /id="exportStageJsonBtn"[\s\S]*JSON เกม/);
-  assert.match(html, /id="exportStagePromptBtn"[\s\S]*Prompt ภาพ/);
-  assert.match(html, /id="exportStageGameplayPngBtn"[\s\S]*PNG ทาง\/จุด\/กริด/);
-  assert.match(html, /id="exportStageArtPngBtn"[\s\S]*PNG พื้น\/ของ\/กริด/);
-  assert.match(html, /id="exportStageFullPngBtn"[\s\S]*PNG รวมทั้งหมด/);
+  assert.match(html, /id="exportStageJsonBtn"[\s\S]*Game JSON/);
+  assert.match(html, /id="exportStagePromptBtn"[\s\S]*Image Prompt/);
+  assert.match(html, /id="exportStageGameplayPngBtn"[\s\S]*PNG Path\/Points\/Grid/);
+  assert.match(html, /id="exportStageArtPngBtn"[\s\S]*PNG Art\/Grid/);
+  assert.match(html, /id="exportStageFullPngBtn"[\s\S]*PNG Full/);
   assert.match(app, /stagePreviewSummary:\s*document\.getElementById\("stagePreviewSummary"\)/);
   assert.match(app, /function stageExportData/);
   assert.match(app, /function refreshStagePreview/);
