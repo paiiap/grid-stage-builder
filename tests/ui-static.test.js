@@ -616,11 +616,11 @@ test("stage mode exposes preview and export panel", () => {
   assert.match(html, /data-mode-panel="stage"[\s\S]*data-panel="stage-preview"/);
   assert.match(html, /id="stagePreviewSummary"/);
   assert.match(html, /id="stagePreviewStats"/);
-  assert.match(html, /id="exportStageJsonBtn"[\s\S]*Game JSON/);
+  assert.match(html, /id="exportStageJsonBtn"[\s\S]*GameJSON/);
   assert.match(html, /id="exportStagePromptBtn"[\s\S]*Image Prompt/);
-  assert.match(html, /id="exportStageGameplayPngBtn"[\s\S]*PNG Path\/Points\/Grid/);
-  assert.match(html, /id="exportStageArtPngBtn"[\s\S]*PNG Art\/Grid/);
   assert.match(html, /id="exportStageFullPngBtn"[\s\S]*PNG Full/);
+  assert.match(html, /id="exportStageArtPngBtn"[\s\S]*PNG Art/);
+  assert.match(html, /id="exportStageGameplayPngBtn"[\s\S]*PNG Game Points/);
   assert.match(app, /stagePreviewSummary:\s*document\.getElementById\("stagePreviewSummary"\)/);
   assert.match(app, /function stageExportData/);
   assert.match(app, /function refreshStagePreview/);
