@@ -36,6 +36,7 @@ test("app uses neutral Grid Stage Builder branding", () => {
 
 test("project menu uses save load wording before sample controls", () => {
   assert.match(html, /id="newDocBtn"[\s\S]*New Project[\s\S]*id="exportMasterBtn"[\s\S]*Save Project[\s\S]*id="importBtn"[\s\S]*Load Project[\s\S]*id="sampleBtn"[\s\S]*Load Sample/);
+  assert.match(html, /<button id="exportMasterBtn" title="Save project JSON" type="button">Save Project<\/button>/);
   assert.doesNotMatch(html, /Export master JSON/);
   assert.doesNotMatch(html, />MJ</);
   assert.doesNotMatch(html, />In</);
@@ -638,7 +639,7 @@ test("mode switch separates map drawing tools from stage gameplay tools", () => 
   assert.match(html, /data-mode-tool="map"[\s\S]*data-tool="object"/);
   assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="path"/);
   assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="marker"/);
-  assert.match(html, /data-mode-action="map"[\s\S]*id="exportMasterBtn"/);
+  assert.doesNotMatch(html, /data-mode-action="map"[\s\S]*id="exportMasterBtn"/);
   assert.match(html, /data-mode-action="stage"[\s\S]*id="exportStageBtn"/);
   assert.match(app, /mode:\s*"map"/);
   assert.match(app, /setMode/);
