@@ -2340,10 +2340,10 @@
     context.fillRect(0, 0, state.doc.map.width * size, state.doc.map.height * size);
     for (const tile of state.doc.tiles) drawTile(context, tile, size, layers);
     drawObjects(context, size, layers);
-    if (state.mode === "stage" && layers.markers) drawMarkers(context, size);
     if (state.mode === "stage") drawStages(context, size);
     if (layers.grid) drawGrid(context, size);
     if (state.mode === "stage" && layers.path) drawPath(context, size);
+    if (state.mode === "stage" && layers.markers) drawMarkers(context, size);
     drawSelection(context, size);
     if (layers.objects || layers.doors) drawObjectControls(context, size);
     drawDragPreview(context, size);
