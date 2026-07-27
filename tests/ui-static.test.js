@@ -550,6 +550,25 @@ test("stage marker tool can select and drag existing markers", () => {
   assert.match(upBody, /state\.markerDrag = null/);
 });
 
+test("stage select tool can select and drag gameplay markers and paths", () => {
+  const downBody = functionBody(app, "handlePointerDown");
+  const moveBody = functionBody(app, "handlePointerMove");
+  const upBody = functionBody(app, "handlePointerUp");
+  assert.match(app, /function pathAtTile/);
+  assert.match(app, /function movePathByDelta/);
+  assert.match(app, /pathDrag:\s*null/);
+  assert.match(downBody, /state\.tool === "select"[\s\S]*state\.mode === "stage"[\s\S]*const marker = markerAtTile\(point\.x,\s*point\.y\)/);
+  assert.match(downBody, /state\.markerDrag = \{ id: marker\.id/);
+  assert.match(downBody, /const path = pathAtTile\(point\.x,\s*point\.y\)/);
+  assert.match(downBody, /state\.selected = \{ type: "path", id: path\.id \}/);
+  assert.match(downBody, /state\.pathDrag = \{ id: path\.id/);
+  assert.match(moveBody, /if \(state\.pathDrag\)[\s\S]*movePathByDelta\(path,\s*nextDx - state\.pathDrag\.appliedDx,\s*nextDy - state\.pathDrag\.appliedDy\)/);
+  assert.match(moveBody, /state\.pathDrag\.appliedDx \+= moved\.dx/);
+  assert.match(moveBody, /state\.pathDrag\.appliedDy \+= moved\.dy/);
+  assert.match(upBody, /const pathDrag = state\.pathDrag/);
+  assert.match(upBody, /state\.pathDrag = null/);
+});
+
 test("stage mode exposes preview and export panel", () => {
   assert.match(html, /data-mode-panel="stage"[\s\S]*data-panel="stage-preview"/);
   assert.match(html, /id="stagePreviewSummary"/);

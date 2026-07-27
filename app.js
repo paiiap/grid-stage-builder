@@ -382,6 +382,7 @@
     isDragging: false,
     objectDrag: null,
     markerDrag: null,
+    pathDrag: null,
     panStart: null
   };
 
@@ -834,6 +835,43 @@
     return [...activeStageMarkers()].reverse().find((item) => x >= item.x && y >= item.y && x < item.x + (item.width || 1) && y < item.y + (item.height || 1)) || null;
   }
 
+  function pathAtTile(x, y) {
+    if (state.mode !== "stage") return null;
+    return [...activeStagePaths()].reverse().find((path) => {
+      if (core.rasterizePath(path).some((cell) => cell.x === x && cell.y === y)) return true;
+      return (path.areas || []).some((area) => x >= area.x && y >= area.y && x < area.x + area.width && y < area.y + area.height);
+    }) || null;
+  }
+
+  function pathBounds(path) {
+    const cells = [
+      ...(path.points || []),
+      ...core.pathAreaCells(path.areas || [])
+    ];
+    if (!cells.length) return null;
+    const minX = Math.min(...cells.map((cell) => cell.x));
+    const minY = Math.min(...cells.map((cell) => cell.y));
+    const maxX = Math.max(...cells.map((cell) => cell.x));
+    const maxY = Math.max(...cells.map((cell) => cell.y));
+    return { minX, minY, maxX, maxY };
+  }
+
+  function movePathByDelta(path, dx, dy) {
+    const bounds = pathBounds(path);
+    if (!bounds || (!dx && !dy)) return { dx: 0, dy: 0 };
+    const clampedDx = clamp(dx, -bounds.minX, state.doc.map.width - 1 - bounds.maxX);
+    const clampedDy = clamp(dy, -bounds.minY, state.doc.map.height - 1 - bounds.maxY);
+    for (const point of path.points || []) {
+      point.x += clampedDx;
+      point.y += clampedDy;
+    }
+    for (const area of path.areas || []) {
+      area.x += clampedDx;
+      area.y += clampedDy;
+    }
+    return { dx: clampedDx, dy: clampedDy };
+  }
+
   function objectBounds(object) {
     const footprint = core.objectFootprint(object);
     const minX = Math.min(...footprint.map((cell) => cell.x));
@@ -1112,6 +1150,12 @@
         state.selected = { type: "marker", id: marker.id };
         return;
       }
+      const path = pathAtTile(x, y);
+      if (path) {
+        state.selected = { type: "path", id: path.id };
+        setActivePathId(path.id);
+        return;
+      }
       state.selected = { type: "tile", x, y };
       return;
     }
@@ -1132,11 +1176,31 @@
     state.previewRect = null;
     state.objectDrag = null;
     state.markerDrag = null;
+    state.pathDrag = null;
     if (state.tool === "pan") {
       state.panStart = { x: event.clientX, y: event.clientY, left: elements.scroller.scrollLeft, top: elements.scroller.scrollTop };
       return;
     }
     if (state.tool === "select") {
+      if (state.mode === "stage") {
+        const marker = markerAtTile(point.x, point.y);
+        if (marker) {
+          pushHistory();
+          state.selected = { type: "marker", id: marker.id };
+          state.markerDrag = { id: marker.id, offsetX: point.x - marker.x, offsetY: point.y - marker.y, moved: false };
+          afterChange(false);
+          return;
+        }
+        const path = pathAtTile(point.x, point.y);
+        if (path) {
+          pushHistory();
+          state.selected = { type: "path", id: path.id };
+          setActivePathId(path.id);
+          state.pathDrag = { id: path.id, startX: point.x, startY: point.y, appliedDx: 0, appliedDy: 0, moved: false };
+          afterChange(false);
+          return;
+        }
+      }
       const action = objectActionAtPoint(canvasPoint.x, canvasPoint.y);
       if (action === "rotate") {
         pushHistory();
@@ -1220,6 +1284,20 @@
       render();
       return;
     }
+    if (state.pathDrag) {
+      const stage = activeStage();
+      const path = stage?.paths?.find((item) => item.id === state.pathDrag.id);
+      if (path) {
+        const nextDx = point.x - state.pathDrag.startX;
+        const nextDy = point.y - state.pathDrag.startY;
+        const moved = movePathByDelta(path, nextDx - state.pathDrag.appliedDx, nextDy - state.pathDrag.appliedDy);
+        state.pathDrag.appliedDx += moved.dx;
+        state.pathDrag.appliedDy += moved.dy;
+        if (moved.dx || moved.dy) state.pathDrag.moved = true;
+      }
+      render();
+      return;
+    }
     if (state.tool === "rect" || state.tool === "stage" || state.tool === "path_area") {
       state.previewRect = rectFromPoints(state.dragStart, point);
       render();
@@ -1254,10 +1332,12 @@
     state.previewRect = null;
     const objectDrag = state.objectDrag;
     const markerDrag = state.markerDrag;
+    const pathDrag = state.pathDrag;
     state.objectDrag = null;
     state.markerDrag = null;
+    state.pathDrag = null;
     state.panStart = null;
-    afterChange(objectDrag?.moved || markerDrag?.moved || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
+    afterChange(objectDrag?.moved || markerDrag?.moved || pathDrag?.moved || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
   }
 
   function setTool(tool) {
@@ -2297,6 +2377,12 @@
     } else if (state.selected?.type === "object") {
       const object = selectedObject();
       elements.selectionSummary.textContent = object ? `${object.name || object.id} | ${object.x}, ${object.y} | ${object.width} x ${object.height}` : "No object selected";
+    } else if (state.mode === "stage" && state.selected?.type === "marker") {
+      const marker = activeStageMarkers().find((item) => item.id === state.selected.id);
+      elements.selectionSummary.textContent = marker ? `${markerLabel(marker)} | ${marker.type} | ${marker.x}, ${marker.y}` : "No marker selected";
+    } else if (state.mode === "stage" && state.selected?.type === "path") {
+      const path = activeStagePaths().find((item) => item.id === state.selected.id);
+      elements.selectionSummary.textContent = path ? `${path.name || path.id} | ${path.points.length} points | width ${path.width_tiles || 1}` : "No path selected";
     } else {
       const stage = activeStage();
       elements.selectionSummary.textContent = stage ? `Stage ${stage.name}: ${stage.width} x ${stage.height} | top ${stage.top_direction || "north"}` : "No tile selected";
