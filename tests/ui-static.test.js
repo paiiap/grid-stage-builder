@@ -34,6 +34,22 @@ test("app uses neutral Grid Stage Builder branding", () => {
   assert.match(html, /<span>Map &amp; Stage Editor<\/span>/);
 });
 
+test("project menu uses save load wording before sample controls", () => {
+  assert.match(html, /id="newDocBtn"[\s\S]*New Map[\s\S]*id="exportMasterBtn"[\s\S]*Save Map[\s\S]*id="importBtn"[\s\S]*Load Map[\s\S]*id="sampleBtn"[\s\S]*Load Sample/);
+  assert.doesNotMatch(html, /Export master JSON/);
+  assert.doesNotMatch(html, />MJ</);
+  assert.doesNotMatch(html, />In</);
+});
+
+test("zoom and grid buttons live with show hide controls", () => {
+  assert.match(html, /class="rail-view-controls"[\s\S]*id="zoomOutBtn"[\s\S]*id="zoomInBtn"[\s\S]*id="gridBtn"/);
+  const toolbarBody = html.match(/<div class="toolbar"[\s\S]*?<\/div>/)?.[0] || "";
+  assert.doesNotMatch(toolbarBody, /id="zoomOutBtn"/);
+  assert.doesNotMatch(toolbarBody, /id="zoomInBtn"/);
+  assert.doesNotMatch(toolbarBody, /id="gridBtn"/);
+  assert.match(css, /\.rail-view-controls\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+});
+
 test("paint panel exposes Thai named buttons instead of visible selects", () => {
   assert.match(html, /data-paint-target="structure"[\s\S]*กำแพง/);
   assert.match(html, /data-paint-target="build"[\s\S]*วางได้/);

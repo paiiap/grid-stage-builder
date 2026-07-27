@@ -18,18 +18,15 @@
         <button id="stageModeBtn" class="mode-btn" data-mode="stage" type="button">Stage</button>
       </div>
       <div class="toolbar" aria-label="File controls">
-        <button id="newDocBtn" title="New map" type="button">N</button>
-        <button id="sampleBtn" title="Load sample" type="button">S</button>
+        <button id="newDocBtn" title="New map" type="button">New Map</button>
+        <button data-mode-action="map" id="exportMasterBtn" title="Save project JSON" type="button">Save Map</button>
+        <button id="importBtn" title="Open project JSON" type="button">Load Map</button>
+        <button id="sampleBtn" title="Load sample" type="button">Load Sample</button>
         <button id="undoBtn" title="Undo" type="button">&#8630;</button>
         <button id="redoBtn" title="Redo" type="button">&#8631;</button>
-        <button id="importBtn" title="Import JSON" type="button">In</button>
-        <button data-mode-action="map" id="exportMasterBtn" title="Export master JSON" type="button">MJ</button>
         <button data-mode-action="stage" id="exportStageBtn" title="Export stage JSON" type="button">SJ</button>
         <button data-mode-action="stage" id="exportPngBtn" title="Export selected stage PNG" type="button">PNG</button>
         <button data-mode-action="stage" id="exportPromptBtn" title="Export prompt text" type="button">TXT</button>
-        <button id="zoomOutBtn" title="Zoom out" type="button">-</button>
-        <button id="zoomInBtn" title="Zoom in" type="button">+</button>
-        <button id="gridBtn" title="Toggle grid" type="button">#</button>
       </div>
     </header>
 
@@ -48,6 +45,11 @@
 
       <section class="rail-layers" aria-label="Layer show hide">
         <h2>SHOW/HIDE</h2>
+        <div class="rail-view-controls" aria-label="View controls">
+          <button id="zoomOutBtn" title="Zoom out" type="button">-</button>
+          <button id="zoomInBtn" title="Zoom in" type="button">+</button>
+          <button id="gridBtn" title="Toggle grid" type="button">#</button>
+        </div>
         <div class="layer-grid">
           <label class="checkline"><input id="layerRoomInput" data-layer="room" type="checkbox" checked> Room Color</label>
           <label class="checkline"><input id="layerTerrainInput" data-layer="terrain" type="checkbox" checked> Terrain i/o</label>
