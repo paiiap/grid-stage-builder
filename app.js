@@ -3,6 +3,8 @@
 
   const core = window.HouseMapCore;
   const STORAGE_KEY = "pawtectors.houseMapBuilder.v1";
+  const THEME_STORAGE_KEY = "gridStageBuilder.theme";
+  const THEME_CHOICES = new Set(["classic", "dark", "sweet"]);
   const GRID_MAJOR_EVERY = 5;
   const ROOM_TYPE_PRESETS = {
     living_room: { id: "living_room", name: "ห้องนั่งเล่น", color: "#2f8f73", terrain: "indoor_floor" },
@@ -315,6 +317,19 @@
     layerGrid: document.getElementById("layerGridInput")
   };
   let syncingSelectedObjectFields = false;
+
+  function applyTheme(theme) {
+    if (!THEME_CHOICES.has(theme)) theme = "classic";
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+    document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.themeChoice === theme);
+    });
+  }
+
+  function loadTheme() {
+    applyTheme(localStorage.getItem(THEME_STORAGE_KEY) || "classic");
+  }
 
   const colors = {
     terrain: {
@@ -2460,6 +2475,9 @@
         render();
       });
     });
+    document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+      button.addEventListener("click", () => applyTheme(button.dataset.themeChoice));
+    });
     window.addEventListener("keydown", (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
       const tool = TOOL_SHORTCUTS[event.key.toLowerCase()];
@@ -2581,6 +2599,7 @@
     link.click();
   }
 
+  loadTheme();
   bindEvents();
   renderObjectPalette();
   normalizeMaps();

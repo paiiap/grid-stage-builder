@@ -41,13 +41,28 @@ test("project menu uses save load wording before sample controls", () => {
   assert.doesNotMatch(html, />In</);
 });
 
-test("zoom and grid buttons live with show hide controls", () => {
+test("view and theme controls sit above show hide controls", () => {
   assert.match(html, /class="rail-view-controls"[\s\S]*id="zoomOutBtn"[\s\S]*id="zoomInBtn"[\s\S]*id="gridBtn"/);
+  assert.match(html, /class="rail-theme-controls"[\s\S]*data-theme-choice="classic"[\s\S]*data-theme-choice="dark"[\s\S]*data-theme-choice="sweet"/);
+  assert(html.indexOf('class="rail-view-controls"') < html.indexOf('class="rail-theme-controls"'));
+  assert(html.indexOf('class="rail-theme-controls"') < html.indexOf("<h2>SHOW/HIDE</h2>"));
   const toolbarBody = html.match(/<div class="toolbar"[\s\S]*?<\/div>/)?.[0] || "";
   assert.doesNotMatch(toolbarBody, /id="zoomOutBtn"/);
   assert.doesNotMatch(toolbarBody, /id="zoomInBtn"/);
   assert.doesNotMatch(toolbarBody, /id="gridBtn"/);
   assert.match(css, /\.rail-view-controls\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+  assert.match(css, /\.rail-theme-controls\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/);
+});
+
+test("app applies and persists selectable themes", () => {
+  assert.match(css, /:root\[data-theme="dark"\]/);
+  assert.match(css, /:root\[data-theme="sweet"\]/);
+  assert.match(app, /THEME_STORAGE_KEY/);
+  assert.match(app, /function applyTheme/);
+  assert.match(app, /localStorage\.getItem\(THEME_STORAGE_KEY\)/);
+  assert.match(app, /localStorage\.setItem\(THEME_STORAGE_KEY,\s*theme\)/);
+  assert.match(app, /document\.documentElement\.dataset\.theme = theme/);
+  assert(app.includes('querySelectorAll("[data-theme-choice]")'));
 });
 
 test("paint panel exposes Thai named buttons instead of visible selects", () => {

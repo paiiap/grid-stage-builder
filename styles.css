@@ -10,6 +10,91 @@
   --button: #eee5d7;
   --button-active: #b9d39a;
   --danger: #b9473d;
+  --topbar-bg: #fbf7ee;
+  --mode-bg: #eee5d7;
+  --mode-active-bg: #ffffff;
+  --rail-bg: #ebe7df;
+  --canvas-pane-bg: #d9d3c8;
+  --canvas-bg: #eadfcf;
+  --canvas-border: #8f8172;
+  --inspector-bg: #f6f0e5;
+  --input-bg: #fffdf8;
+  --kbd-bg: #fffaf0;
+  --tile-panel-bg: #f4ecd9;
+  --status-bg: #302b26;
+  --status-ink: #f8efe2;
+  --validation-bg: #fff2ef;
+  --warning-bg: #fff7d8;
+  --warning-ink: #705c15;
+  --active-border: #6e8f50;
+  --stage-active-bg: #d8c4ee;
+  --stage-active-border: #7a4fa3;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ui-bg: #15181d;
+  --panel: #222831;
+  --line: #3b4654;
+  --ink: #eef2f5;
+  --muted: #aeb9c4;
+  --accent: #77b7df;
+  --accent-2: #ff9f85;
+  --button: #2c3541;
+  --button-active: #3f5f52;
+  --danger: #ff8f86;
+  --topbar-bg: #1b2028;
+  --mode-bg: #28313c;
+  --mode-active-bg: #11161c;
+  --rail-bg: #1c222a;
+  --canvas-pane-bg: #222936;
+  --canvas-bg: #2f3743;
+  --canvas-border: #596678;
+  --inspector-bg: #1b2028;
+  --input-bg: #151a21;
+  --kbd-bg: #151a21;
+  --tile-panel-bg: #26313d;
+  --status-bg: #0d1014;
+  --status-ink: #d9e4ef;
+  --validation-bg: #3a2225;
+  --warning-bg: #383221;
+  --warning-ink: #f0d47a;
+  --active-border: #8ac99e;
+  --stage-active-bg: #433255;
+  --stage-active-border: #bd8cec;
+}
+
+:root[data-theme="sweet"] {
+  color-scheme: light;
+  --ui-bg: #fff3f8;
+  --panel: #fff8fc;
+  --line: #e7bfd2;
+  --ink: #392936;
+  --muted: #846579;
+  --accent: #b45aa0;
+  --accent-2: #e58b7c;
+  --button: #f7dce9;
+  --button-active: #d8efd7;
+  --danger: #c94e68;
+  --topbar-bg: #fff7fb;
+  --mode-bg: #f3d7e6;
+  --mode-active-bg: #ffffff;
+  --rail-bg: #f8e8f0;
+  --canvas-pane-bg: #e9dfe8;
+  --canvas-bg: #faedf4;
+  --canvas-border: #c99ab5;
+  --inspector-bg: #f9eaf2;
+  --input-bg: #fffafd;
+  --kbd-bg: #fff3f8;
+  --tile-panel-bg: #f7e4ef;
+  --status-bg: #50384a;
+  --status-ink: #fff0f7;
+  --validation-bg: #ffe8ef;
+  --warning-bg: #fff3cf;
+  --warning-ink: #7f6240;
+  --active-border: #73ad82;
+  --stage-active-bg: #e5d8ff;
+  --stage-active-border: #9d74cb;
 }
 
 * {
@@ -69,7 +154,7 @@ button:focus-visible {
   gap: 16px;
   padding: 8px 12px;
   border-bottom: 1px solid var(--line);
-  background: #fbf7ee;
+  background: var(--topbar-bg);
 }
 
 .brand {
@@ -100,7 +185,7 @@ button:focus-visible {
   padding: 3px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: #eee5d7;
+  background: var(--mode-bg);
 }
 
 .mode-btn {
@@ -112,7 +197,7 @@ button:focus-visible {
 }
 
 .mode-btn.active {
-  background: #ffffff;
+  background: var(--mode-active-bg);
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -130,7 +215,7 @@ button:focus-visible {
   gap: 8px;
   padding: 10px 8px;
   border-right: 1px solid var(--line);
-  background: #ebe7df;
+  background: var(--rail-bg);
 }
 
 .tool {
@@ -152,7 +237,8 @@ button:focus-visible {
   height: 22px;
   border: 1px solid rgba(54, 45, 35, 0.25);
   border-radius: 4px;
-  background: #fffaf0;
+  background: var(--kbd-bg);
+  color: var(--ink);
   font: 700 11px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -191,9 +277,50 @@ button:focus-visible {
   font-weight: 800;
 }
 
+.rail-theme-controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  margin-bottom: 9px;
+}
+
+.rail-theme-controls button {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+}
+
+.theme-choice.active {
+  border-color: var(--accent);
+  background: var(--mode-active-bg);
+}
+
+.theme-dot {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.theme-dot-classic {
+  background: linear-gradient(135deg, #fffaf0 0 48%, #b9d39a 50% 100%);
+}
+
+.theme-dot-dark {
+  background: linear-gradient(135deg, #11161c 0 48%, #77b7df 50% 100%);
+}
+
+.theme-dot-sweet {
+  background: linear-gradient(135deg, #fff3f8 0 48%, #d8efd7 50% 100%);
+}
+
 .tool.active {
   background: var(--button-active);
-  border-color: #6e8f50;
+  border-color: var(--active-border);
 }
 
 .tool[hidden],
@@ -206,7 +333,7 @@ button:focus-visible {
   grid-row: 2;
   min-width: 0;
   min-height: 0;
-  background: #d9d3c8;
+  background: var(--canvas-pane-bg);
 }
 
 .canvas-scroller {
@@ -221,8 +348,8 @@ button:focus-visible {
   width: 2304px;
   height: 2304px;
   image-rendering: crisp-edges;
-  background: #eadfcf;
-  border: 1px solid #8f8172;
+  background: var(--canvas-bg);
+  border: 1px solid var(--canvas-border);
   box-shadow: 0 12px 30px rgba(60, 48, 35, 0.2);
   transform-origin: top left;
 }
@@ -235,7 +362,7 @@ button:focus-visible {
   overflow: auto;
   padding: 12px;
   border-left: 1px solid var(--line);
-  background: #f6f0e5;
+  background: var(--inspector-bg);
 }
 
 .panel {
@@ -275,7 +402,7 @@ textarea {
   min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 6px;
-  background: #fffdf8;
+  background: var(--input-bg);
   color: var(--ink);
   padding: 6px 8px;
 }
@@ -357,13 +484,13 @@ textarea {
 }
 
 .stage-list-item.active {
-  background: #d8c4ee;
-  border-color: #7a4fa3;
+  background: var(--stage-active-bg);
+  border-color: var(--stage-active-border);
 }
 
 .choice-btn.active {
   background: var(--button-active);
-  border-color: #6e8f50;
+  border-color: var(--active-border);
 }
 
 .checkline {
@@ -394,7 +521,7 @@ textarea {
   padding: 5px 7px;
   border: 1px solid #ded2bf;
   border-radius: 6px;
-  background: #fffdf8;
+  background: var(--input-bg);
   font-weight: 700;
 }
 
@@ -409,7 +536,7 @@ textarea {
   padding: 8px;
   border: 1px solid #ded2bf;
   border-radius: 6px;
-  background: #fffdf8;
+  background: var(--input-bg);
   color: var(--ink);
 }
 
@@ -425,7 +552,7 @@ textarea {
   padding: 7px 8px;
   border: 1px solid #ded2bf;
   border-radius: 6px;
-  background: #f4ecd9;
+  background: var(--tile-panel-bg);
 }
 
 .stat-grid strong,
@@ -469,13 +596,13 @@ textarea {
 .validation-list li {
   padding: 6px 8px;
   border-radius: 6px;
-  background: #fff2ef;
+  background: var(--validation-bg);
   color: var(--danger);
 }
 
 .validation-list li.warning {
-  background: #fff7d8;
-  color: #705c15;
+  background: var(--warning-bg);
+  color: var(--warning-ink);
 }
 
 .statusbar {
@@ -485,8 +612,8 @@ textarea {
   gap: 18px;
   padding: 0 12px;
   border-top: 1px solid var(--line);
-  background: #302b26;
-  color: #f8efe2;
+  background: var(--status-bg);
+  color: var(--status-ink);
   font-size: 12px;
 }
 

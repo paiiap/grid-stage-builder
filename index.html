@@ -44,12 +44,17 @@
       <button class="tool" data-mode-tool="all" data-tool="pan" title="H - เลื่อนจอ" type="button"><kbd>H</kbd><span>เลื่อน</span></button>
 
       <section class="rail-layers" aria-label="Layer show hide">
-        <h2>SHOW/HIDE</h2>
         <div class="rail-view-controls" aria-label="View controls">
           <button id="zoomOutBtn" title="Zoom out" type="button">-</button>
           <button id="zoomInBtn" title="Zoom in" type="button">+</button>
           <button id="gridBtn" title="Toggle grid" type="button">#</button>
         </div>
+        <div class="rail-theme-controls" aria-label="Theme controls">
+          <button class="theme-choice active" data-theme-choice="classic" title="Theme เดิม" type="button"><span class="theme-dot theme-dot-classic"></span></button>
+          <button class="theme-choice" data-theme-choice="dark" title="Theme สีเข้ม" type="button"><span class="theme-dot theme-dot-dark"></span></button>
+          <button class="theme-choice" data-theme-choice="sweet" title="Theme สีหวานแหวว" type="button"><span class="theme-dot theme-dot-sweet"></span></button>
+        </div>
+        <h2>SHOW/HIDE</h2>
         <div class="layer-grid">
           <label class="checkline"><input id="layerRoomInput" data-layer="room" type="checkbox" checked> Room Color</label>
           <label class="checkline"><input id="layerTerrainInput" data-layer="terrain" type="checkbox" checked> Terrain i/o</label>
