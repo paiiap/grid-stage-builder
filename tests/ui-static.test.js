@@ -663,7 +663,12 @@ test("mode switch separates map drawing tools from stage gameplay tools", () => 
   assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="path"/);
   assert.match(html, /data-mode-tool="stage"[\s\S]*data-tool="marker"/);
   assert.doesNotMatch(html, /data-mode-action="map"[\s\S]*id="exportMasterBtn"/);
-  assert.match(html, /data-mode-action="stage"[\s\S]*id="exportStageBtn"/);
+  assert.doesNotMatch(html, /id="exportStageBtn"/);
+  assert.doesNotMatch(html, /id="exportPngBtn"/);
+  assert.doesNotMatch(html, /id="exportPromptBtn"/);
+  assert.doesNotMatch(app, /exportStageBtn"\)\.addEventListener/);
+  assert.doesNotMatch(app, /exportPngBtn"\)\.addEventListener/);
+  assert.doesNotMatch(app, /exportPromptBtn"\)\.addEventListener/);
   assert.match(app, /mode:\s*"map"/);
   assert.match(app, /setMode/);
   assert.match(app, /updateModeUi/);

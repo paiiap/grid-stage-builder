@@ -2706,9 +2706,6 @@
     });
     document.getElementById("exportMasterBtn").addEventListener("click", exportMasterDocument);
     elements.exportMaps.addEventListener("click", exportSelectedMaps);
-    document.getElementById("exportStageBtn").addEventListener("click", exportActiveStageJson);
-    document.getElementById("exportPromptBtn").addEventListener("click", exportActiveStagePrompt);
-    document.getElementById("exportPngBtn").addEventListener("click", exportStagePng);
     document.getElementById("exportStageJsonBtn").addEventListener("click", exportActiveStageJson);
     document.getElementById("exportStagePromptBtn").addEventListener("click", exportActiveStagePrompt);
     document.getElementById("exportStageGameplayPngBtn").addEventListener("click", () => exportStagePng("gameplay"));
