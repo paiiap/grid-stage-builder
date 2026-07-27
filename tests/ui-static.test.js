@@ -546,6 +546,13 @@ test("stage path area expansions render directional arrows", () => {
   assert.match(app, /function drawPathAreaArrow/);
 });
 
+test("stage path area expansion frames stay solid while drawing and after placement", () => {
+  const areaBody = functionBody(app, "drawPathAreas");
+  const previewBody = functionBody(app, "drawDragPreview");
+  assert.doesNotMatch(areaBody, /setLineDash/);
+  assert.match(previewBody, /if \(state\.tool !== "path_area"\) context\.setLineDash\(\[10,\s*6\]\)/);
+});
+
 test("stage path drawing stops after the selected base is reached", () => {
   const body = functionBody(app, "addPathPoint");
   assert.match(app, /function pathHasReachedBase/);

@@ -1966,7 +1966,6 @@
     context.fillStyle = colors.path;
     context.strokeStyle = "rgba(214, 104, 74, 0.64)";
     context.lineWidth = Math.max(2, size * 0.05);
-    context.setLineDash([size * 0.18, size * 0.12]);
     for (const path of stage.paths || []) {
       context.globalAlpha = pathDisplayAlpha(path, active);
       context.strokeStyle = path.id === active?.id ? "rgba(214, 104, 74, 0.86)" : "rgba(214, 104, 74, 0.42)";
@@ -2327,7 +2326,7 @@
     context.fillStyle = state.tool === "stage" ? "rgba(122, 79, 163, 0.12)" : state.tool === "path_area" ? "rgba(242, 222, 194, 0.44)" : "rgba(31, 111, 159, 0.14)";
     context.strokeStyle = state.tool === "stage" ? "rgba(122, 79, 163, 0.9)" : state.tool === "path_area" ? "rgba(214, 104, 74, 0.9)" : "rgba(31, 111, 159, 0.9)";
     context.lineWidth = 4;
-    context.setLineDash([10, 6]);
+    if (state.tool !== "path_area") context.setLineDash([10, 6]);
     context.fillRect(rect.x * size, rect.y * size, rect.width * size, rect.height * size);
     context.strokeRect(rect.x * size + 2, rect.y * size + 2, rect.width * size - 4, rect.height * size - 4);
     context.restore();
