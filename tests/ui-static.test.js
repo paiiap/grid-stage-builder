@@ -534,6 +534,22 @@ test("stage mode can drag rectangular path area expansions", () => {
   assert.match(app, /drawPathAreas/);
 });
 
+test("stage marker tool can select and drag existing markers", () => {
+  const downBody = functionBody(app, "handlePointerDown");
+  const moveBody = functionBody(app, "handlePointerMove");
+  const upBody = functionBody(app, "handlePointerUp");
+  assert.match(app, /function markerAtTile/);
+  assert.match(app, /markerDrag:\s*null/);
+  assert.match(downBody, /state\.tool === "marker" && state\.mode === "stage"[\s\S]*const marker = markerAtTile\(point\.x,\s*point\.y\)/);
+  assert.match(downBody, /state\.selected = \{ type: "marker", id: marker\.id \}/);
+  assert.match(downBody, /state\.markerDrag = \{ id: marker\.id/);
+  assert.match(moveBody, /if \(state\.markerDrag\)[\s\S]*const nextX = clamp/);
+  assert.match(moveBody, /marker\.x = nextX/);
+  assert.match(moveBody, /marker\.y = nextY/);
+  assert.match(upBody, /const markerDrag = state\.markerDrag/);
+  assert.match(upBody, /state\.markerDrag = null/);
+});
+
 test("stage mode exposes preview and export panel", () => {
   assert.match(html, /data-mode-panel="stage"[\s\S]*data-panel="stage-preview"/);
   assert.match(html, /id="stagePreviewSummary"/);

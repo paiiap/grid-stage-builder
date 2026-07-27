@@ -381,6 +381,7 @@
     previewRect: null,
     isDragging: false,
     objectDrag: null,
+    markerDrag: null,
     panStart: null
   };
 
@@ -828,6 +829,11 @@
     return [...state.doc.objects].reverse().find((item) => core.objectFootprint(item).some((cell) => cell.x === x && cell.y === y)) || null;
   }
 
+  function markerAtTile(x, y) {
+    if (state.mode !== "stage") return null;
+    return [...activeStageMarkers()].reverse().find((item) => x >= item.x && y >= item.y && x < item.x + (item.width || 1) && y < item.y + (item.height || 1)) || null;
+  }
+
   function objectBounds(object) {
     const footprint = core.objectFootprint(object);
     const minX = Math.min(...footprint.map((cell) => cell.x));
@@ -1101,7 +1107,7 @@
 
   function selectAt(x, y) {
     if (state.mode === "stage") {
-      const marker = [...activeStageMarkers()].reverse().find((item) => x >= item.x && y >= item.y && x < item.x + (item.width || 1) && y < item.y + (item.height || 1));
+      const marker = markerAtTile(x, y);
       if (marker) {
         state.selected = { type: "marker", id: marker.id };
         return;
@@ -1125,6 +1131,7 @@
     state.dragCurrent = point;
     state.previewRect = null;
     state.objectDrag = null;
+    state.markerDrag = null;
     if (state.tool === "pan") {
       state.panStart = { x: event.clientX, y: event.clientY, left: elements.scroller.scrollLeft, top: elements.scroller.scrollTop };
       return;
@@ -1148,6 +1155,16 @@
         pushHistory();
         state.selected = { type: "object", id: object.id };
         state.objectDrag = { id: object.id, offsetX: point.x - object.x, offsetY: point.y - object.y, moved: false };
+        afterChange(false);
+        return;
+      }
+    }
+    if (state.tool === "marker" && state.mode === "stage") {
+      const marker = markerAtTile(point.x, point.y);
+      if (marker) {
+        pushHistory();
+        state.selected = { type: "marker", id: marker.id };
+        state.markerDrag = { id: marker.id, offsetX: point.x - marker.x, offsetY: point.y - marker.y, moved: false };
         afterChange(false);
         return;
       }
@@ -1190,6 +1207,19 @@
       render();
       return;
     }
+    if (state.markerDrag) {
+      const stage = activeStage();
+      const marker = stage?.markers?.find((item) => item.id === state.markerDrag.id);
+      if (marker) {
+        const nextX = clamp(point.x - state.markerDrag.offsetX, 0, state.doc.map.width - Math.max(1, marker.width || 1));
+        const nextY = clamp(point.y - state.markerDrag.offsetY, 0, state.doc.map.height - Math.max(1, marker.height || 1));
+        if (nextX !== marker.x || nextY !== marker.y) state.markerDrag.moved = true;
+        marker.x = nextX;
+        marker.y = nextY;
+      }
+      render();
+      return;
+    }
     if (state.tool === "rect" || state.tool === "stage" || state.tool === "path_area") {
       state.previewRect = rectFromPoints(state.dragStart, point);
       render();
@@ -1223,9 +1253,11 @@
     state.dragCurrent = null;
     state.previewRect = null;
     const objectDrag = state.objectDrag;
+    const markerDrag = state.markerDrag;
     state.objectDrag = null;
+    state.markerDrag = null;
     state.panStart = null;
-    afterChange(objectDrag?.moved || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
+    afterChange(objectDrag?.moved || markerDrag?.moved || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
   }
 
   function setTool(tool) {
