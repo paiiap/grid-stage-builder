@@ -126,3 +126,5 @@ The tests cover core map/stage behavior, export rules, validation rules, and sta
 This is an early production-tool prototype.
 
 The current focus is making stage design fast, readable, and exportable for a tile-based game pipeline.
+
+Detailed map-builder status is tracked in [`docs/map-builder-status.md`](docs/map-builder-status.md).
