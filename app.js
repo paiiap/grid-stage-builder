@@ -2,23 +2,103 @@
   "use strict";
 
   const core = window.HouseMapCore;
+  const wallModel = window.GridWallModel;
   const STORAGE_KEY = "gridStageBuilder.project.v1";
   const THEME_STORAGE_KEY = "gridStageBuilder.theme";
   const THEME_CHOICES = new Set(["classic", "dark", "sweet"]);
   const GRID_MAJOR_EVERY = 5;
+  const WALL_ATLAS_TILE_SIZE = 48;
+  const WALL_ASSET_BASE_PATH = "assets/walls";
+  const FLOOR_TEXTURES = {
+    living_room: "assets/floor-tiles/pastel-house-v2/wood.png",
+    kitchen: "assets/floor-tiles/pastel-house-v2/kitchen_tile.png",
+    dining_room: "assets/floor-tiles/pastel-house-v2/dining_wood.png",
+    bedroom: "assets/floor-tiles/pastel-house-v2/wood.png",
+    bathroom: "assets/floor-tiles/pastel-house-v2/bath_tile.png",
+    cat_room: "assets/floor-tiles/pastel-house-v2/cat_room_tile.png",
+    garden: "assets/floor-tiles/pastel-house-v2/grass.png",
+    balcony: "assets/floor-tiles/pastel-house-v2/balcony_wood.png"
+  };
+  const floorTextureImages = new Map();
+  const floorTexturePatterns = new Map();
+  const FURNITURE_SPRITES = {
+    bedding_stack_with_curtain: "assets/furniture/pastel-house-v2/bedding_stack_with_curtain.png",
+    decorative_floor_lamp: "assets/furniture/pastel-house-v2/decorative_floor_lamp.png",
+    potted_plant_square: "assets/furniture/pastel-house-v2/potted_plant_square.png",
+    cat_cushion_stack: "assets/furniture/pastel-house-v2/cat_cushion_stack.png",
+    pet_bowl_pair: "assets/furniture/pastel-house-v2/pet_bowl_pair.png",
+    cat_food_bag: "assets/furniture/pastel-house-v2/cat_food_bag.png",
+    cat_display_shelf: "assets/furniture/pastel-house-v2/cat_display_shelf.png",
+    toilet_side_unit: "assets/furniture/pastel-house-v2/toilet_side_unit.png",
+    potted_plant_round: "assets/furniture/pastel-house-v2/potted_plant_round.png",
+    small_wall_drawer: "assets/furniture/pastel-house-v2/small_wall_drawer.png",
+    tissue_box: "assets/furniture/pastel-house-v2/tissue_box.png",
+    bathroom_vanity_sink_wide: "assets/furniture/pastel-house-v2/bathroom_vanity_sink_wide.png",
+    square_pet_bed: "assets/furniture/pastel-house-v2/square_pet_bed.png",
+    brown_armchair: "assets/furniture/pastel-house-v2/brown_armchair.png",
+    blue_armchair: "assets/furniture/pastel-house-v2/blue_armchair.png",
+    open_door_vertical: "assets/furniture/pastel-house-v2/open_door_vertical.png",
+    single_speaker_left: "assets/furniture/pastel-house-v2/single_speaker_left.png",
+    double_speaker_right: "assets/furniture/pastel-house-v2/double_speaker_right.png",
+    bathroom_vanity_sink_small: "assets/furniture/pastel-house-v2/bathroom_vanity_sink_small.png",
+    bedroom_wash_basin: "assets/furniture/pastel-house-v2/bedroom_wash_basin.png",
+    bed_cream_blanket: "assets/furniture/pastel-house-v2/bed_cream_blanket.png",
+    blue_sofa: "assets/furniture/pastel-house-v2/blue_sofa_vertical.png",
+    coffee_table: "assets/furniture/pastel-house-v2/living_rug_coffee_table.png",
+    decorative_display_cabinet: "assets/furniture/pastel-house-v2/decorative_display_cabinet.png",
+    glass_rain_shower: "assets/furniture/pastel-house-v2/glass_rain_shower.png",
+    long_window_curtain: "assets/furniture/pastel-house-v2/long_window_curtain.png",
+    plant_corner: "assets/furniture/pastel-house-v2/potted_plant_round.png",
+    wood_door_panel: "assets/furniture/pastel-house-v2/wood_door_panel.png",
+    laundry_basket: "assets/furniture/pastel-house-v2/laundry_basket.png",
+    bedside_table_lamp: "assets/furniture/pastel-house-v2/bedside_table_lamp.png",
+    open_door_bottom: "assets/furniture/pastel-house-v2/open_door_bottom.png",
+    small_nightstand: "assets/furniture/pastel-house-v2/small_nightstand.png",
+  };
+  const LEGACY_FURNITURE_SPRITE_ALIASES = {
+    armchair: "blue_armchair",
+    bath_mat: "bathroom_vanity_sink_small",
+    bed: "bed_cream_blanket",
+    bookshelf: "cat_display_shelf",
+    cat_bed: "square_pet_bed",
+    cat_bowl: "pet_bowl_pair",
+    cat_toy: "cat_food_bag",
+    coffee_table: "coffee_table",
+    decoration: "tissue_box",
+    display_cabinet: "decorative_display_cabinet",
+    floor_lamp: "decorative_floor_lamp",
+    furniture: "small_wall_drawer",
+    garden_chair: "brown_armchair",
+    medicine_cabinet: "small_wall_drawer",
+    nightstand: "small_nightstand",
+    plant: "potted_plant_round",
+    potted_plant: "potted_plant_round",
+    serving_cart: "small_wall_drawer",
+    shower: "glass_rain_shower",
+    sink: "bathroom_vanity_sink_wide",
+    sofa: "blue_sofa",
+    storage_box: "small_wall_drawer",
+    table: "square_pet_bed",
+    toilet: "toilet_side_unit",
+    trash_bin: "tissue_box",
+    vanity: "bedroom_wash_basin",
+    window: "long_window_curtain"
+  };
+  const furnitureSpriteImages = new Map();
   const ROOM_TYPE_PRESETS = {
-    living_room: { id: "living_room", name: "Living Room", color: "#2f8f73", terrain: "indoor_floor" },
-    kitchen: { id: "kitchen", name: "Kitchen", color: "#c27a34", terrain: "indoor_floor" },
-    dining_room: { id: "dining_room", name: "Dining Room", color: "#b69535", terrain: "indoor_floor" },
-    bedroom: { id: "bedroom", name: "Bedroom", color: "#5e82c4", terrain: "indoor_floor" },
-    bathroom: { id: "bathroom", name: "Bathroom", color: "#4aa0b5", terrain: "indoor_floor" },
-    cat_room: { id: "cat_room", name: "Cat Room", color: "#b0659f", terrain: "indoor_floor" },
-    garden: { id: "garden", name: "Garden", color: "#4f9b58", terrain: "garden" },
-    balcony: { id: "balcony", name: "Balcony", color: "#9f7b4f", terrain: "outdoor_ground" }
+    living_room: { id: "living_room", name: "Living Room", color: "#2f8f73", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.living_room },
+    kitchen: { id: "kitchen", name: "Kitchen", color: "#c27a34", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.kitchen },
+    dining_room: { id: "dining_room", name: "Dining Room", color: "#b69535", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.dining_room },
+    bedroom: { id: "bedroom", name: "Bedroom", color: "#5e82c4", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.bedroom },
+    bathroom: { id: "bathroom", name: "Bathroom", color: "#4aa0b5", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.bathroom },
+    cat_room: { id: "cat_room", name: "Cat Room", color: "#b0659f", terrain: "indoor_floor", floor_texture: FLOOR_TEXTURES.cat_room },
+    garden: { id: "garden", name: "Garden", color: "#4f9b58", terrain: "garden", floor_texture: FLOOR_TEXTURES.garden },
+    balcony: { id: "balcony", name: "Balcony", color: "#9f7b4f", terrain: "outdoor_ground", floor_texture: FLOOR_TEXTURES.balcony }
   };
   const TOOL_SHORTCUTS = {
     v: "select",
     t: "tile",
+    w: "wall",
     r: "room",
     q: "rect",
     p: "path",
@@ -29,10 +109,11 @@
     e: "erase",
     h: "pan"
   };
-  const MAP_MODE_TOOLS = new Set(["select", "tile", "room", "rect", "object", "erase", "pan"]);
+  const MAP_MODE_TOOLS = new Set(["select", "tile", "wall", "room", "rect", "object", "erase", "pan"]);
   const STAGE_MODE_TOOLS = new Set(["select", "stage", "path", "path_area", "marker", "erase", "pan"]);
   const TOOL_PANELS = {
     tile: ["tile"],
+    wall: ["walls"],
     room: ["room"],
     rect: ["room"],
     object: ["object"],
@@ -102,7 +183,30 @@
     mat: "Mat",
     storage_box: "Storage Box",
     decoration: "Decoration",
-    gameplay_obstacle: "Obstacle"
+    gameplay_obstacle: "Obstacle",
+    bedding_stack_with_curtain: "Bedding Stack With Curtain",
+    decorative_floor_lamp: "Decorative Floor Lamp",
+    potted_plant_square: "Potted Plant Square",
+    cat_cushion_stack: "Cat Cushion Stack",
+    pet_bowl_pair: "Pet Bowl Pair",
+    cat_food_bag: "Cat Food Bag",
+    toilet_side_unit: "Toilet Side Unit",
+    small_nightstand: "Small Nightstand",
+    potted_plant_round: "Potted Plant Round",
+    small_wall_drawer: "Small Wall Drawer",
+    tissue_box: "Tissue Box",
+    bathroom_vanity_sink_wide: "Bathroom Vanity Sink Wide",
+    square_pet_bed: "Square Pet Bed",
+    brown_armchair: "Brown Armchair",
+    open_door_vertical: "Open Door Vertical",
+    single_speaker_left: "Single Speaker Left",
+    double_speaker_right: "Double Speaker Right",
+    bathroom_vanity_sink_small: "Bathroom Vanity Sink Small",
+    bedroom_wash_basin: "Bedroom Wash Basin",
+    wood_door_panel: "Wood Door Panel",
+    bedside_table_lamp: "Bedside Table Lamp",
+    open_door_bottom: "Open Door Bottom",
+    blue_armchair: "Blue Armchair"
   };
   const objectCategoryDefaults = {
     sofa: { width: 3, height: 2, facing: "south" },
@@ -116,7 +220,7 @@
     bed: { width: 3, height: 4, facing: "north" },
     nightstand: { width: 1, height: 1, facing: "south" },
     vanity: { width: 2, height: 1, facing: "south" },
-    laundry_basket: { width: 1, height: 1, facing: "south" },
+    laundry_basket: { width: 2, height: 1, facing: "south" },
     door: { width: 1, height: 2, facing: "east" },
     window: { width: 2, height: 1, facing: "south", blocking: false },
     table: { width: 2, height: 2, facing: "south" },
@@ -159,7 +263,30 @@
     mat: { width: 2, height: 1, facing: "south", blocking: false },
     storage_box: { width: 1, height: 1, facing: "south" },
     decoration: { width: 1, height: 1, facing: "south" },
-    gameplay_obstacle: { width: 2, height: 2, facing: "south" }
+    gameplay_obstacle: { width: 2, height: 2, facing: "south" },
+    bedding_stack_with_curtain: { width: 2, height: 2, facing: "south" },
+    decorative_floor_lamp: { width: 2, height: 2, facing: "south" },
+    potted_plant_square: { width: 1, height: 1, facing: "south" },
+    cat_cushion_stack: { width: 1, height: 2, facing: "south" },
+    pet_bowl_pair: { width: 2, height: 1, facing: "south" },
+    cat_food_bag: { width: 1, height: 1, facing: "south" },
+    toilet_side_unit: { width: 2, height: 2, facing: "south" },
+    small_nightstand: { width: 1, height: 1, facing: "south" },
+    potted_plant_round: { width: 1, height: 1, facing: "south" },
+    small_wall_drawer: { width: 1, height: 1, facing: "south" },
+    tissue_box: { width: 1, height: 1, facing: "south" },
+    bathroom_vanity_sink_wide: { width: 2, height: 2, facing: "south" },
+    square_pet_bed: { width: 2, height: 2, facing: "south" },
+    brown_armchair: { width: 2, height: 2, facing: "south" },
+    open_door_vertical: { width: 1, height: 2, facing: "south" },
+    single_speaker_left: { width: 1, height: 1, facing: "south" },
+    double_speaker_right: { width: 1, height: 1, facing: "south" },
+    bathroom_vanity_sink_small: { width: 1, height: 2, facing: "south" },
+    bedroom_wash_basin: { width: 2, height: 2, facing: "south" },
+    wood_door_panel: { width: 1, height: 2, facing: "south" },
+    bedside_table_lamp: { width: 2, height: 2, facing: "south" },
+    open_door_bottom: { width: 1, height: 2, facing: "south" },
+    blue_armchair: { width: 2, height: 2, facing: "south" }
   };
   const DEFAULT_ROOM_DEFINITIONS = Object.values(ROOM_TYPE_PRESETS).map((room) => Object.assign({}, room));
   const DEFAULT_OBJECT_DEFINITIONS = [
@@ -168,6 +295,13 @@
     { room_id: "common", id: "plant", name: "Plant" },
     { room_id: "common", id: "decoration", name: "Decoration" },
     { room_id: "common", id: "gameplay_obstacle", name: "Obstacle" },
+    { room_id: "common", id: "potted_plant_square", name: "Potted Plant Square" },
+    { room_id: "common", id: "potted_plant_round", name: "Potted Plant Round" },
+    { room_id: "common", id: "small_wall_drawer", name: "Small Wall Drawer" },
+    { room_id: "common", id: "tissue_box", name: "Tissue Box" },
+    { room_id: "common", id: "open_door_vertical", name: "Open Door Vertical" },
+    { room_id: "common", id: "wood_door_panel", name: "Wood Door Panel" },
+    { room_id: "common", id: "open_door_bottom", name: "Open Door Bottom" },
     { room_id: "living_room", id: "sofa", name: "Sofa" },
     { room_id: "living_room", id: "coffee_table", name: "Coffee Table" },
     { room_id: "living_room", id: "tv", name: "TV" },
@@ -176,6 +310,11 @@
     { room_id: "living_room", id: "bookshelf", name: "Bookshelf" },
     { room_id: "living_room", id: "armchair", name: "Armchair" },
     { room_id: "living_room", id: "floor_lamp", name: "Floor Lamp" },
+    { room_id: "living_room", id: "decorative_floor_lamp", name: "Decorative Floor Lamp" },
+    { room_id: "living_room", id: "brown_armchair", name: "Brown Armchair" },
+    { room_id: "living_room", id: "blue_armchair", name: "Blue Armchair" },
+    { room_id: "living_room", id: "single_speaker_left", name: "Single Speaker Left" },
+    { room_id: "living_room", id: "double_speaker_right", name: "Double Speaker Right" },
     { room_id: "kitchen", id: "fridge", name: "Fridge" },
     { room_id: "kitchen", id: "sink", name: "Sink" },
     { room_id: "kitchen", id: "stove", name: "Stove" },
@@ -196,6 +335,10 @@
     { room_id: "bedroom", id: "floor_lamp", name: "Floor Lamp" },
     { room_id: "bedroom", id: "rug", name: "Rug" },
     { room_id: "bedroom", id: "laundry_basket", name: "Laundry Basket" },
+    { room_id: "bedroom", id: "bedding_stack_with_curtain", name: "Bedding Stack With Curtain" },
+    { room_id: "bedroom", id: "bedroom_wash_basin", name: "Bedroom Wash Basin" },
+    { room_id: "bedroom", id: "bedside_table_lamp", name: "Bedside Table Lamp" },
+    { room_id: "bedroom", id: "small_nightstand", name: "Small Nightstand" },
     { room_id: "bathroom", id: "tub", name: "Tub" },
     { room_id: "bathroom", id: "toilet", name: "Toilet" },
     { room_id: "bathroom", id: "sink", name: "Sink" },
@@ -203,6 +346,9 @@
     { room_id: "bathroom", id: "medicine_cabinet", name: "Medicine Cabinet" },
     { room_id: "bathroom", id: "towel_shelf", name: "Towel Shelf" },
     { room_id: "bathroom", id: "bath_mat", name: "Bath Mat" },
+    { room_id: "bathroom", id: "toilet_side_unit", name: "Toilet Side Unit" },
+    { room_id: "bathroom", id: "bathroom_vanity_sink_wide", name: "Bathroom Vanity Sink Wide" },
+    { room_id: "bathroom", id: "bathroom_vanity_sink_small", name: "Bathroom Vanity Sink Small" },
     { room_id: "cat_room", id: "cat_tree", name: "Cat Tower" },
     { room_id: "cat_room", id: "litter_box", name: "Litter Box" },
     { room_id: "cat_room", id: "cat_bowl", name: "Cat Bowl" },
@@ -210,6 +356,10 @@
     { room_id: "cat_room", id: "cat_toy", name: "Cat Toy" },
     { room_id: "cat_room", id: "scratching_post", name: "Scratching Post" },
     { room_id: "cat_room", id: "cat_tunnel", name: "Cat Tunnel" },
+    { room_id: "cat_room", id: "cat_cushion_stack", name: "Cat Cushion Stack" },
+    { room_id: "cat_room", id: "pet_bowl_pair", name: "Pet Bowl Pair" },
+    { room_id: "cat_room", id: "cat_food_bag", name: "Cat Food Bag" },
+    { room_id: "cat_room", id: "square_pet_bed", name: "Square Pet Bed" },
     { room_id: "garden", id: "plant", name: "Plant" },
     { room_id: "garden", id: "potted_plant", name: "Potted Plant" },
     { room_id: "garden", id: "bush", name: "Bush" },
@@ -232,6 +382,8 @@
     mapMode: document.getElementById("mapModeBtn"),
     stageMode: document.getElementById("stageModeBtn"),
     selectionSummary: document.getElementById("selectionSummary"),
+    wallSelectionSummary: document.getElementById("wallSelectionSummary"),
+    deleteWallSegment: document.getElementById("deleteWallSegmentBtn"),
     mapList: document.getElementById("mapList"),
     mapName: document.getElementById("mapNameInput"),
     addMap: document.getElementById("addMapBtn"),
@@ -260,22 +412,18 @@
     objectFacing: document.getElementById("objectFacingInput"),
     objectRotation: document.getElementById("objectRotationInput"),
     objectBlocking: document.getElementById("objectBlockingInput"),
+    objectSizeFields: document.querySelector(".object-size-fields"),
     doorFields: document.querySelector(".door-fields"),
     doorType: document.getElementById("doorTypeInput"),
-    doorSwing: document.getElementById("doorSwingInput"),
-    doorOpenState: document.getElementById("doorOpenStateInput"),
-    doorHinge: document.getElementById("doorHingeInput"),
     selectedObjectSummary: document.getElementById("selectedObjectSummary"),
     selectedObjectWidth: document.getElementById("selectedObjectWidthInput"),
     selectedObjectHeight: document.getElementById("selectedObjectHeightInput"),
     selectedObjectFacing: document.getElementById("selectedObjectFacingInput"),
     selectedObjectBlocking: document.getElementById("selectedObjectBlockingInput"),
     selectedObjectOverlap: document.getElementById("selectedObjectOverlapInput"),
+    selectedObjectSizeFields: document.querySelector(".selected-object-size-fields"),
     selectedDoorFields: document.querySelector(".selected-door-fields"),
     selectedDoorType: document.getElementById("selectedDoorTypeInput"),
-    selectedDoorSwing: document.getElementById("selectedDoorSwingInput"),
-    selectedDoorOpenState: document.getElementById("selectedDoorOpenStateInput"),
-    selectedDoorHinge: document.getElementById("selectedDoorHingeInput"),
     markerType: document.getElementById("markerTypeInput"),
     stageList: document.getElementById("stageList"),
     addStage: document.getElementById("addStageBtn"),
@@ -383,6 +531,15 @@
     objectDrag: null,
     markerDrag: null,
     pathDrag: null,
+    wallAction: "wall",
+    selectedWallSegmentId: null,
+    wallDraw: null,
+    wallResize: null,
+    wallSelectionCycle: { key: null, index: 0 },
+    wallRenderLookup: null,
+    wallAssets: null,
+    wallAssetsStatus: "loading",
+    wallAssetsWarning: null,
     panStart: null
   };
 
@@ -392,6 +549,42 @@
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function loadImage(source) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener("load", () => resolve(image), { once: true });
+      image.addEventListener("error", () => reject(new Error(`Could not load ${source}`)), { once: true });
+      image.src = source;
+    });
+  }
+
+  function loadWallAssets() {
+    state.wallAssetsStatus = "loading";
+    state.wallAssetsWarning = null;
+    const metadata = globalThis.GridWallAtlasMetadata;
+    return Promise.all([
+      metadata && metadata.masks && metadata.windows && metadata.doors
+        ? metadata
+        : Promise.reject(new Error("Could not load wall metadata")),
+      loadImage(`${WALL_ASSET_BASE_PATH}/pastel-wall-autotile-48.png`),
+      loadImage(`${WALL_ASSET_BASE_PATH}/pastel-window-overlays-48.png`),
+      loadImage(`${WALL_ASSET_BASE_PATH}/pastel-door-overlays-48.png`)
+    ]).then(([metadata, walls, windows, doors]) => {
+      state.wallAssets = { metadata, walls, windows, doors };
+      state.wallAssetsStatus = "ready";
+      render();
+      refreshInspector();
+      return state.wallAssets;
+    }).catch(() => {
+      state.wallAssets = null;
+      state.wallAssetsStatus = "fallback";
+      state.wallAssetsWarning = "Wall artwork unavailable; using flat fallback.";
+      render();
+      refreshInspector();
+      return null;
+    });
   }
 
   function uniqueId(base, usedIds) {
@@ -405,6 +598,22 @@
     return id;
   }
 
+  function definitionKey(definition) {
+    return `${definition.room_id || "common"}:${definition.id}`;
+  }
+
+  function mergeDefaultObjectDefinitions(definitions) {
+    const merged = Array.isArray(definitions) ? definitions : [];
+    const existing = new Set(merged.map(definitionKey));
+    for (const definition of DEFAULT_OBJECT_DEFINITIONS) {
+      const key = definitionKey(definition);
+      if (existing.has(key)) continue;
+      merged.push(clone(definition));
+      existing.add(key);
+    }
+    return merged;
+  }
+
   function ensureDefinitions() {
     const hadRoomDefinitions = Array.isArray(state.doc.room_definitions) && state.doc.room_definitions.length;
     if (!hadRoomDefinitions) {
@@ -412,6 +621,8 @@
     }
     if (!Array.isArray(state.doc.object_definitions) || !state.doc.object_definitions.length) {
       state.doc.object_definitions = clone(DEFAULT_OBJECT_DEFINITIONS);
+    } else {
+      state.doc.object_definitions = mergeDefaultObjectDefinitions(state.doc.object_definitions);
     }
     if (!hadRoomDefinitions) {
       for (const room of state.doc.rooms || []) {
@@ -438,6 +649,7 @@
 
   function activeMapSnapshot() {
     ensureDefinitions();
+    ensureWallState(state.doc);
     return {
       id: state.doc.map.id,
       name: state.doc.map.name,
@@ -447,6 +659,7 @@
       room_definitions: clone(state.doc.room_definitions || []),
       objects: clone(state.doc.objects || []),
       object_definitions: clone(state.doc.object_definitions || []),
+      wall_segments: clone(state.doc.wall_segments || []),
       paths: clone(state.doc.paths || []),
       markers: clone(state.doc.markers || []),
       stages: clone(state.doc.stages || [])
@@ -454,6 +667,7 @@
   }
 
   function applyMapSnapshot(snapshot) {
+    ensureWallState(snapshot);
     state.doc.active_map_id = snapshot.id;
     state.doc.map = clone(snapshot.map || state.doc.map);
     state.doc.map.id = snapshot.id;
@@ -463,6 +677,7 @@
     state.doc.room_definitions = clone(snapshot.room_definitions || DEFAULT_ROOM_DEFINITIONS);
     state.doc.objects = clone(snapshot.objects || []);
     state.doc.object_definitions = clone(snapshot.object_definitions || DEFAULT_OBJECT_DEFINITIONS);
+    state.doc.wall_segments = clone(snapshot.wall_segments || []);
     state.doc.paths = clone(snapshot.paths || []);
     state.doc.markers = clone(snapshot.markers || []);
     state.doc.stages = clone(snapshot.stages || []);
@@ -480,6 +695,15 @@
     }
     const active = state.doc.maps.find((map) => map.id === state.doc.active_map_id);
     if (active) Object.assign(active, activeMapSnapshot(), { id: active.id, name: state.doc.map.name || active.name });
+  }
+
+  function ensureAllMapWallStates() {
+    for (const map of state.doc.maps || []) ensureWallState(map);
+  }
+
+  function ensureWallState(mapState) {
+    wallModel.migrateWallSegments(mapState);
+    wallModel.materializeWallState(mapState);
   }
 
   function nextMapId() {
@@ -520,6 +744,7 @@
       room_definitions: clone(doc.room_definitions || DEFAULT_ROOM_DEFINITIONS),
       objects: [],
       object_definitions: clone(doc.object_definitions || DEFAULT_OBJECT_DEFINITIONS),
+      wall_segments: [],
       paths: [],
       markers: [],
       stages: []
@@ -542,6 +767,8 @@
   }
 
   function saveDocument() {
+    normalizeMaps();
+    ensureAllMapWallStates();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.doc));
   }
 
@@ -826,9 +1053,158 @@
     return state.doc.objects.find((object) => object.id === state.selected.id) || null;
   }
 
+  function selectedWallSegment() {
+    return (state.doc.wall_segments || []).find((segment) => segment.id === state.selectedWallSegmentId) || null;
+  }
+
+  function wallSegmentsAt(cell, axis) {
+    const filtered = wallModel.segmentsAtCell(state.doc.wall_segments || [], cell, axis);
+    return filtered.length ? filtered : wallModel.segmentsAtCell(state.doc.wall_segments || [], cell);
+  }
+
+  function selectWallSegmentAt(cell, axis) {
+    const segments = wallSegmentsAt(cell, axis);
+    if (!segments.length) {
+      state.selectedWallSegmentId = null;
+      state.wallSelectionCycle = { key: null, index: 0 };
+      return;
+    }
+    const key = `${cell.x},${cell.y},${axis || "any"}`;
+    const index = state.wallSelectionCycle.key === key ? (state.wallSelectionCycle.index + 1) % segments.length : 0;
+    state.wallSelectionCycle = { key, index };
+    state.selectedWallSegmentId = segments[index].id;
+  }
+
+  function nextWallSegmentId() {
+    const usedIds = new Set((state.doc.wall_segments || []).map((segment) => segment.id));
+    let index = (state.doc.wall_segments || []).length + 1;
+    let id = `wall_${String(index).padStart(3, "0")}`;
+    while (usedIds.has(id)) {
+      index += 1;
+      id = `wall_${String(index).padStart(3, "0")}`;
+    }
+    return id;
+  }
+
+  function materializeWalls() {
+    wallModel.materializeWallState(state.doc);
+  }
+
+  function commitWallDraw() {
+    if (!state.wallDraw) return false;
+    const segment = wallModel.normalizeWallSegment({
+      id: nextWallSegmentId(),
+      axis: state.wallDraw.axis,
+      start: state.wallDraw.start,
+      end: state.wallDraw.end
+    }, state.doc.map);
+    pushHistory();
+    state.doc.wall_segments = [...(state.doc.wall_segments || []), segment];
+    state.selectedWallSegmentId = segment.id;
+    materializeWalls();
+    return true;
+  }
+
+  function deleteSelectedWallSegment() {
+    const segment = selectedWallSegment();
+    if (!segment) return;
+    pushHistory();
+    state.doc.wall_segments = state.doc.wall_segments.filter((item) => item.id !== segment.id);
+    state.selectedWallSegmentId = null;
+    state.wallSelectionCycle = { key: null, index: 0 };
+    materializeWalls();
+    afterChange(true);
+  }
+
+  function isWallOpening(object) {
+    return object?.category === "window" || object?.category === "door";
+  }
+
+  function doorLateralOffset(axis, hinge) {
+    const delta = hinge === "end" ? -1 : 1;
+    return axis === "horizontal" ? { x: delta, y: 0 } : { x: 0, y: delta };
+  }
+
+  function doorPerpendicularOffset(axis, swing) {
+    const direction = swing === "out" ? 1 : -1;
+    if (axis === "horizontal") return { x: 0, y: direction };
+    return { x: direction === 1 ? -1 : 1, y: 0 };
+  }
+
+  function doorSwingCells(mapState, object) {
+    const base = { x: object.x, y: object.y };
+    if (object?.category !== "door") return [base];
+    const axis = wallModel.openingOrientation(mapState, object);
+    if (!axis) return [base];
+    const lateral = doorLateralOffset(axis, object.door_hinge || "start");
+    const perpendicular = doorPerpendicularOffset(axis, object.door_swing || "in");
+    return [
+      base,
+      { x: base.x + lateral.x, y: base.y + lateral.y },
+      { x: base.x + perpendicular.x, y: base.y + perpendicular.y },
+      { x: base.x + lateral.x + perpendicular.x, y: base.y + lateral.y + perpendicular.y }
+    ];
+  }
+
+  function doorHiddenWallCellKeys(mapState) {
+    const keys = new Set();
+    for (const object of mapState.objects || []) {
+      if (object?.category !== "door") continue;
+      for (const cell of doorSwingCells(mapState, object)) keys.add(`${cell.x},${cell.y}`);
+    }
+    return keys;
+  }
+
+  function nextWallOpeningId(category) {
+    const usedIds = new Set(state.doc.objects.map((object) => object.id));
+    const base = `${category}_${Date.now().toString(36)}`;
+    let id = base;
+    let index = 2;
+    while (usedIds.has(id)) {
+      id = `${base}_${index}`;
+      index += 1;
+    }
+    return id;
+  }
+
+  function updateOpeningOrientation(object) {
+    const attachment = wallModel.openingAttachment(state.doc, object);
+    if (attachment.attached && attachment.axis) object.facing = wallModel.facingForAxis(attachment.axis);
+    return attachment;
+  }
+
+  function addWallOpening(category, x, y) {
+    const object = {
+      id: nextWallOpeningId(category),
+      name: objectDefinitionLabel(category),
+      category,
+      x,
+      y,
+      width: 1,
+      height: 1,
+      facing: category === "door" ? "east" : "south",
+      rotation: 0,
+      door_type: elements.doorType.value,
+      door_swing: "in",
+      open_state: "open",
+      door_hinge: "start",
+      room_id: core.getTile(state.doc, x, y)?.room_id || null,
+      blocking: false,
+      notes: ""
+    };
+    updateOpeningOrientation(object);
+    state.doc.objects.push(object);
+    state.selected = { type: "object", id: object.id };
+    materializeWalls();
+    return object;
+  }
+
   function objectAtTile(x, y) {
     if (state.mode === "stage") return null;
-    return [...state.doc.objects].reverse().find((item) => core.objectFootprint(item).some((cell) => cell.x === x && cell.y === y)) || null;
+    return [...state.doc.objects].reverse().find((item) => {
+      const cells = item.category === "door" ? doorSwingCells(state.doc, item) : core.objectFootprint(item);
+      return cells.some((cell) => cell.x === x && cell.y === y);
+    }) || null;
   }
 
   function markerAtTile(x, y) {
@@ -903,8 +1279,23 @@
     };
   }
 
+  function selectionRect(object, size) {
+    if (object.category !== "door") return objectRect(object, size);
+    const cells = doorSwingCells(state.doc, object);
+    const minX = Math.min(...cells.map((cell) => cell.x));
+    const minY = Math.min(...cells.map((cell) => cell.y));
+    const maxX = Math.max(...cells.map((cell) => cell.x));
+    const maxY = Math.max(...cells.map((cell) => cell.y));
+    return {
+      x: minX * size + 5,
+      y: minY * size + 5,
+      width: (maxX - minX + 1) * size - 10,
+      height: (maxY - minY + 1) * size - 10
+    };
+  }
+
   function objectControlRects(object, size) {
-    const rect = objectRect(object, size);
+    const rect = selectionRect(object, size);
     const buttonSize = Math.max(22, size * 0.42);
     const gap = 6;
     return {
@@ -935,6 +1326,23 @@
     if (pointInRect(point, controls.rotate)) return "rotate";
     if (pointInRect(point, controls.delete)) return "delete";
     return null;
+  }
+
+  function wallHandleRects(segment, size) {
+    return [segment.start, segment.end].map((cell, index) => ({
+      handle: index === 0 ? "start" : "end",
+      x: cell.x * size + size * 0.31,
+      y: cell.y * size + size * 0.31,
+      width: size * 0.38,
+      height: size * 0.38
+    }));
+  }
+
+  function wallHandleAtPoint(x, y) {
+    const segment = selectedWallSegment();
+    if (!segment) return null;
+    const point = { x, y };
+    return wallHandleRects(segment, tileSize()).find((rect) => pointInRect(point, rect))?.handle || null;
   }
 
   function ensureRoom() {
@@ -970,6 +1378,7 @@
       structure: elements.structure.value,
       build: elements.build.value
     });
+    materializeWalls();
   }
 
   function paintRoom(x, y) {
@@ -998,9 +1407,11 @@
     }
     const object = objectAtTile(x, y);
     if (object) {
-      state.doc.objects = state.doc.objects.filter((item) => item.id !== object.id);
-      if (state.selected?.type === "object" && state.selected.id === object.id) state.selected = null;
-      return;
+      if (!isWallOpening(object)) {
+        state.doc.objects = state.doc.objects.filter((item) => item.id !== object.id);
+        if (state.selected?.type === "object" && state.selected.id === object.id) state.selected = null;
+        return;
+      }
     }
     const tile = core.getTile(state.doc, x, y);
     if (!tile) return;
@@ -1008,9 +1419,10 @@
     for (const room of state.doc.rooms) {
       room.cells = (room.cells || []).filter((cell) => cell.x !== x || cell.y !== y);
     }
-    state.doc.objects = state.doc.objects.filter((object) => !core.objectFootprint(object).some((cell) => cell.x === x && cell.y === y));
+    state.doc.objects = state.doc.objects.filter((object) => isWallOpening(object) || !core.objectFootprint(object).some((cell) => cell.x === x && cell.y === y));
     const stage = activeStage();
     if (stage) stage.markers = stage.markers.filter((marker) => marker.x !== x || marker.y !== y);
+    materializeWalls();
   }
 
   function drawRect(a, b, mode) {
@@ -1096,20 +1508,21 @@
     if (state.mode === "stage") return;
     const id = `object_${Date.now().toString(36)}`;
     const category = elements.objectCategory.value;
+    const isDoor = category === "door";
     const object = {
       id,
       name: "Object",
       category,
       x,
       y,
-      width: Number(elements.objectWidth.value || 1),
-      height: Number(elements.objectHeight.value || 1),
-      facing: elements.objectFacing.value,
+      width: isDoor ? 1 : Number(elements.objectWidth.value || 1),
+      height: isDoor ? 1 : Number(elements.objectHeight.value || 1),
+      facing: isDoor ? "east" : elements.objectFacing.value,
       rotation: Number(elements.objectRotation.value || 0),
       door_type: elements.doorType.value,
-      door_swing: elements.doorSwing.value,
-      open_state: elements.doorOpenState.value,
-      door_hinge: elements.doorHinge.value,
+      door_swing: "in",
+      open_state: "open",
+      door_hinge: "start",
       room_id: core.getTile(state.doc, x, y)?.room_id || null,
       blocking: elements.objectBlocking.checked,
       notes: ""
@@ -1132,19 +1545,50 @@
   function rotateSelectedObject() {
     const object = selectedObject();
     if (!object) return;
+    if (object.category === "door") {
+      cycleDoorSwingOrientation(object);
+      materializeWalls();
+      afterChange(true);
+      return;
+    }
     const width = object.width || 1;
     object.width = object.height || 1;
     object.height = width;
     object.rotation = ((Number(object.rotation || 0) + 90) % 360);
     object.facing = rotateFacing(object.facing);
     moveObjectTo(object, object.x, object.y);
+    if (isWallOpening(object)) {
+      updateOpeningOrientation(object);
+      materializeWalls();
+    }
+  }
+
+  // The door's facing stays locked to whichever wall it is attached to, so
+  // rotate cycles through the four hinge x swing combinations instead
+  // (replacing the removed Hinge corner / Open dropdowns).
+  const DOOR_SWING_STATES = [
+    { hinge: "start", swing: "in" },
+    { hinge: "start", swing: "out" },
+    { hinge: "end", swing: "out" },
+    { hinge: "end", swing: "in" }
+  ];
+
+  function cycleDoorSwingOrientation(object) {
+    const currentIndex = DOOR_SWING_STATES.findIndex((state) =>
+      state.hinge === (object.door_hinge || "start") && state.swing === (object.door_swing || "in")
+    );
+    const next = DOOR_SWING_STATES[(currentIndex + 1 + DOOR_SWING_STATES.length) % DOOR_SWING_STATES.length];
+    object.door_hinge = next.hinge;
+    object.door_swing = next.swing;
   }
 
   function deleteSelectedObject() {
     const object = selectedObject();
     if (!object) return;
+    const opening = isWallOpening(object);
     state.doc.objects = state.doc.objects.filter((item) => item.id !== object.id);
     state.selected = null;
+    if (opening) materializeWalls();
   }
 
   function addMarker(x, y) {
@@ -1181,6 +1625,7 @@
   }
 
   function handlePointerDown(event) {
+    if (state.tool === "wall" && state.wallAssetsStatus === "loading") return;
     const point = canvasToTile(event);
     const canvasPoint = canvasToCanvasPoint(event);
     state.isDragging = true;
@@ -1190,8 +1635,43 @@
     state.objectDrag = null;
     state.markerDrag = null;
     state.pathDrag = null;
+    state.wallDraw = null;
+    state.wallResize = null;
     if (state.tool === "pan") {
       state.panStart = { x: event.clientX, y: event.clientY, left: elements.scroller.scrollLeft, top: elements.scroller.scrollTop };
+      return;
+    }
+    if (state.tool === "wall") {
+      if (state.wallAction === "select") {
+        const handle = wallHandleAtPoint(canvasPoint.x, canvasPoint.y);
+        if (handle) {
+          pushHistory();
+          state.wallResize = { id: state.selectedWallSegmentId, handle, moved: false };
+          return;
+        }
+        selectWallSegmentAt(point, wallModel.selectionAxisAtPoint(point, canvasPoint, tileSize()));
+        afterChange(false);
+        return;
+      }
+      if (state.wallAction === "wall") {
+        const locked = wallModel.axisLockedEndpoint(point, point);
+        state.wallDraw = { start: point, axis: locked.axis, end: locked.end };
+        render();
+        return;
+      }
+      if (state.wallAction === "window" || state.wallAction === "door") {
+        const object = objectAtTile(point.x, point.y);
+        if (isWallOpening(object)) {
+          pushHistory();
+          state.selected = { type: "object", id: object.id };
+          state.objectDrag = { id: object.id, offsetX: point.x - object.x, offsetY: point.y - object.y, moved: false };
+          afterChange(false);
+          return;
+        }
+        pushHistory();
+        addWallOpening(state.wallAction, point.x, point.y);
+        afterChange(true);
+      }
       return;
     }
     if (state.tool === "select") {
@@ -1280,6 +1760,10 @@
         const nextY = point.y - state.objectDrag.offsetY;
         if (nextX !== object.x || nextY !== object.y) state.objectDrag.moved = true;
         moveObjectTo(object, nextX, nextY);
+        if (isWallOpening(object)) {
+          updateOpeningOrientation(object);
+          materializeWalls();
+        }
       }
       render();
       return;
@@ -1311,6 +1795,30 @@
       render();
       return;
     }
+    if (state.wallResize) {
+      const index = (state.doc.wall_segments || []).findIndex((segment) => segment.id === state.wallResize.id);
+      if (index !== -1) {
+        const segment = state.doc.wall_segments[index];
+        const resized = wallModel.resizeWallSegment(segment, state.wallResize.handle, point, state.doc.map);
+        if (JSON.stringify(segment) !== JSON.stringify(resized)) {
+          const crossed = segment.axis === "vertical"
+            ? (state.wallResize.handle === "start" ? point.y > segment.end.y : point.y < segment.start.y)
+            : (state.wallResize.handle === "start" ? point.x > segment.end.x : point.x < segment.start.x);
+          state.doc.wall_segments[index] = resized;
+          if (crossed) state.wallResize.handle = state.wallResize.handle === "start" ? "end" : "start";
+          state.wallResize.moved = true;
+          materializeWalls();
+        }
+      }
+      render();
+      return;
+    }
+    if (state.wallDraw) {
+      const locked = wallModel.axisLockedEndpoint(state.wallDraw.start, point);
+      state.wallDraw = { start: state.wallDraw.start, axis: locked.axis, end: locked.end };
+      render();
+      return;
+    }
     if (state.tool === "rect" || state.tool === "stage" || state.tool === "path_area") {
       state.previewRect = rectFromPoints(state.dragStart, point);
       render();
@@ -1339,6 +1847,9 @@
         addPathArea(state.dragStart, point);
       }
     }
+    const wallDraw = state.wallDraw;
+    const wallResize = state.wallResize;
+    const wallDrawCommitted = state.tool === "wall" && state.wallAction === "wall" && Boolean(wallDraw) && commitWallDraw();
     state.isDragging = false;
     state.dragStart = null;
     state.dragCurrent = null;
@@ -1349,14 +1860,23 @@
     state.objectDrag = null;
     state.markerDrag = null;
     state.pathDrag = null;
+    state.wallDraw = null;
+    state.wallResize = null;
     state.panStart = null;
-    afterChange(objectDrag?.moved || markerDrag?.moved || pathDrag?.moved || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
+    afterChange(objectDrag?.moved || markerDrag?.moved || pathDrag?.moved || wallResize?.moved || wallDrawCommitted || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
   }
 
   function setTool(tool) {
     if (!toolAllowedInMode(tool, state.mode)) return;
     state.tool = tool;
     document.querySelectorAll(".tool").forEach((button) => button.classList.toggle("active", button.dataset.tool === tool));
+    refreshInspector();
+  }
+
+  function setWallAction(action) {
+    state.wallAction = action;
+    state.wallDraw = null;
+    state.wallResize = null;
     refreshInspector();
   }
 
@@ -1416,7 +1936,9 @@
   }
 
   function updateObjectFields() {
-    elements.doorFields.hidden = elements.objectCategory.value !== "door";
+    const isDoor = elements.objectCategory.value === "door";
+    elements.doorFields.hidden = !isDoor;
+    elements.objectSizeFields.hidden = isDoor;
     refreshObjectCategoryButtons();
   }
 
@@ -1444,10 +1966,13 @@
     const object = selectedObject();
     if (!object) {
       elements.selectedDoorFields.hidden = true;
+      elements.selectedObjectSizeFields.hidden = false;
       elements.selectedObjectSummary.textContent = "No object selected";
       return;
     }
-    elements.selectedDoorFields.hidden = object.category !== "door";
+    const isDoor = object.category === "door";
+    elements.selectedDoorFields.hidden = !isDoor;
+    elements.selectedObjectSizeFields.hidden = isDoor;
     syncingSelectedObjectFields = true;
     elements.selectedObjectSummary.textContent = `${object.name || object.id} | ${object.x}, ${object.y}`;
     elements.selectedObjectWidth.value = object.width || 1;
@@ -1456,9 +1981,6 @@
     elements.selectedObjectBlocking.checked = Boolean(object.blocking);
     elements.selectedObjectOverlap.checked = Boolean(object.allow_overlap);
     elements.selectedDoorType.value = object.door_type || "hinged";
-    elements.selectedDoorSwing.value = object.door_swing || "in";
-    elements.selectedDoorOpenState.value = object.open_state || "open";
-    elements.selectedDoorHinge.value = object.door_hinge || "start";
     syncingSelectedObjectFields = false;
   }
 
@@ -1467,16 +1989,19 @@
     const object = selectedObject();
     if (!object) return;
     pushHistory();
-    object.width = clamp(Number(elements.selectedObjectWidth.value || 1), 1, 12);
-    object.height = clamp(Number(elements.selectedObjectHeight.value || 1), 1, 12);
-    object.facing = elements.selectedObjectFacing.value;
+    if (object.category !== "door") {
+      object.width = clamp(Number(elements.selectedObjectWidth.value || 1), 1, 12);
+      object.height = clamp(Number(elements.selectedObjectHeight.value || 1), 1, 12);
+      object.facing = elements.selectedObjectFacing.value;
+    }
     object.blocking = elements.selectedObjectBlocking.checked;
     object.allow_overlap = elements.selectedObjectOverlap.checked;
     object.door_type = elements.selectedDoorType.value;
-    object.door_swing = elements.selectedDoorSwing.value;
-    object.open_state = elements.selectedDoorOpenState.value;
-    object.door_hinge = elements.selectedDoorHinge.value;
     moveObjectTo(object, object.x, object.y);
+    if (isWallOpening(object)) {
+      updateOpeningOrientation(object);
+      materializeWalls();
+    }
     afterChange(true);
   }
 
@@ -1858,6 +2383,100 @@
     });
   }
 
+  function refreshWallControls() {
+    const segment = selectedWallSegment();
+    document.querySelectorAll("[data-wall-action]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.wallAction === state.wallAction);
+    });
+    elements.wallSelectionSummary.textContent = segment
+      ? `${segment.axis} wall | ${segment.start.x}, ${segment.start.y} to ${segment.end.x}, ${segment.end.y}`
+      : "No wall selected";
+    elements.deleteWallSegment.disabled = !segment;
+  }
+
+  function preloadFloorTextures() {
+    if (typeof Image === "undefined") return;
+    for (const src of new Set(Object.values(FLOOR_TEXTURES))) {
+      if (floorTextureImages.has(src)) continue;
+      const image = new Image();
+      image.onload = () => {
+        floorTexturePatterns.clear();
+        render();
+      };
+      image.src = src;
+      floorTextureImages.set(src, image);
+    }
+  }
+
+  function preloadFurnitureSprites() {
+    if (typeof Image === "undefined") return;
+    for (const src of new Set(Object.values(FURNITURE_SPRITES))) {
+      if (furnitureSpriteImages.has(src)) continue;
+      const image = new Image();
+      image.onload = render;
+      image.src = src;
+      furnitureSpriteImages.set(src, image);
+    }
+  }
+
+  function furnitureSpriteForObject(object) {
+    const legacyKey = legacySpriteKeyForObject(object);
+    return object.sprite || FURNITURE_SPRITES[object.category] || FURNITURE_SPRITES[object.id] || FURNITURE_SPRITES[legacyKey] || null;
+  }
+
+  function normalizeSpriteLookup(value) {
+    return String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  }
+
+  function legacySpriteKeyForObject(object) {
+    const keys = [
+      normalizeSpriteLookup(object.category),
+      normalizeSpriteLookup(object.id),
+      normalizeSpriteLookup(object.name)
+    ].filter(Boolean);
+    for (const key of keys) {
+      if (FURNITURE_SPRITES[key]) return key;
+      if (LEGACY_FURNITURE_SPRITE_ALIASES[key]) return LEGACY_FURNITURE_SPRITE_ALIASES[key];
+    }
+    if (normalizeSpriteLookup(object.category) === "furniture") {
+      const label = keys.join("_");
+      if (label.includes("sofa")) return "blue_sofa";
+      if (label.includes("table")) return "coffee_table";
+      if (label.includes("plant")) return "potted_plant_round";
+      if (label.includes("lamp")) return "decorative_floor_lamp";
+      if (label.includes("chair")) return "blue_armchair";
+      if (label.includes("cabinet") || label.includes("shelf")) return "small_wall_drawer";
+    }
+    return null;
+  }
+
+  function drawObjectSprite(context, object, rect) {
+    const src = furnitureSpriteForObject(object);
+    const image = src ? furnitureSpriteImages.get(src) : null;
+    if (!image || !image.complete || !image.naturalWidth) return false;
+    context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+    return true;
+  }
+
+  function floorTextureForRoom(room, preset) {
+    const definition = roomDefinitionForId(room.id);
+    return room.floor_texture || definition?.floor_texture || preset?.floor_texture || FLOOR_TEXTURES[room.type] || null;
+  }
+
+  function roomFillStyle(context, room, preset) {
+    const fallback = `${room.color || preset.color}99`;
+    const src = floorTextureForRoom(room, preset);
+    const image = src ? floorTextureImages.get(src) : null;
+    if (!image || !image.complete || !image.naturalWidth) return fallback;
+    const key = `${src}:${context.canvas?.width || 0}:${context.canvas?.height || 0}`;
+    if (!floorTexturePatterns.has(key)) {
+      const pattern = context.createPattern(image, "repeat");
+      if (!pattern) return fallback;
+      floorTexturePatterns.set(key, pattern);
+    }
+    return floorTexturePatterns.get(key);
+  }
+
   function terrainCode(tile) {
     if (tile.terrain === "indoor_floor") return "i";
     if (tile.terrain === "outdoor_ground" || tile.terrain === "garden") return "o";
@@ -1886,18 +2505,73 @@
       if (room) {
         const definition = roomDefinitionForId(room.id);
         const preset = ROOM_TYPE_PRESETS[room.type] || definition || ROOM_TYPE_PRESETS.living_room;
-        context.fillStyle = `${room.color || definition.color || preset.color}99`;
-        context.fillRect(x + 1, y + 1, size - 2, size - 2);
+        context.fillStyle = roomFillStyle(context, room, preset);
+        context.fillRect(x, y, size, size);
       }
     }
+  }
+
+  function buildWallRenderLookup(doc) {
+    const wallCells = wallModel.wallCoverage(doc.wall_segments || []);
+    const openings = new Map();
+    const offsets = [
+      [0, -1, wallModel.DIR.N], [1, -1, wallModel.DIR.NE], [1, 0, wallModel.DIR.E], [1, 1, wallModel.DIR.SE],
+      [0, 1, wallModel.DIR.S], [-1, 1, wallModel.DIR.SW], [-1, 0, wallModel.DIR.W], [-1, -1, wallModel.DIR.NW]
+    ];
+    const masks = new Map();
+    const wallTiles = Array.from(wallCells, (key) => {
+      const [x, y] = key.split(",").map(Number);
+      let mask = 0;
+      for (const [offsetX, offsetY, direction] of offsets) {
+        if (wallCells.has(`${x + offsetX},${y + offsetY}`)) mask |= direction;
+      }
+      const normalizedMask = wallModel.normalizeNeighborMask(mask);
+      masks.set(key, normalizedMask);
+      return { x, y, key, mask: normalizedMask };
+    });
+    for (const opening of doc.objects || []) {
+      if (!isWallOpening(opening)) continue;
+      const attachment = wallModel.openingAttachment(doc, opening);
+      openings.set(opening.id, {
+        attachment,
+        axis: attachment.axis || "horizontal",
+        runRole: wallModel.openingRunRole(doc, opening),
+        cells: wallModel.openingRenderCells(doc, opening)
+      });
+    }
+    return { wallCells, wallTiles, masks, openings };
+  }
+
+  function drawStructureFallback(context, tile, size) {
+    context.fillStyle = colors.structure.wall;
+    context.fillRect(tile.x * size, tile.y * size, size, size);
+  }
+
+  function drawConnectedWallLayer(context, tile, size, lookup, assets) {
+    const slot = assets.metadata.masks[lookup.masks.get(tile.key) ?? tile.mask];
+    if (!slot) {
+      drawStructureFallback(context, tile, size);
+      return;
+    }
+    context.drawImage(
+      assets.walls,
+      slot.x,
+      slot.y,
+      WALL_ATLAS_TILE_SIZE,
+      WALL_ATLAS_TILE_SIZE,
+      tile.x * size,
+      tile.y * size,
+      size,
+      size
+    );
   }
 
   function drawStructureLayer(context, tile, size) {
     const x = tile.x * size;
     const y = tile.y * size;
-    if (tile.structure !== "none") {
+    if (tile.structure !== "none" && tile.structure !== "wall" && tile.structure !== "window") {
       context.fillStyle = colors.structure[tile.structure] || colors.structure.blocked;
-      if (tile.structure === "wall" || tile.structure === "blocked") context.fillRect(x, y, size, size);
+      if (tile.structure === "blocked") context.fillRect(x, y, size, size);
       else context.fillRect(x + size * 0.18, y + size * 0.18, size * 0.64, size * 0.64);
     }
   }
@@ -2052,7 +2726,26 @@
   }
 
   function drawableObjects() {
-    return [...state.doc.objects].sort((a, b) => Number(Boolean(a.allow_overlap)) - Number(Boolean(b.allow_overlap)));
+    const layerFor = (object) => object.category === "door" ? 2 : object.category === "window" ? 1 : 0;
+    return [...state.doc.objects].sort((a, b) => {
+      const layerDifference = layerFor(a) - layerFor(b);
+      if (layerDifference) return layerDifference;
+      return Number(Boolean(a.allow_overlap)) - Number(Boolean(b.allow_overlap));
+    });
+  }
+
+  function adjacentWallOpenings(object) {
+    const axis = wallModel.openingOrientation(state.doc, object);
+    if (!axis) return { before: null, after: null };
+    const coordinate = axis === "horizontal" ? "x" : "y";
+    const fixedCoordinate = axis === "horizontal" ? "y" : "x";
+    const matchingOpening = (offset) => state.doc.objects.find((candidate) =>
+      candidate !== object && isWallOpening(candidate) &&
+      wallModel.openingOrientation(state.doc, candidate) === axis &&
+      candidate[fixedCoordinate] === object[fixedCoordinate] &&
+      Number(candidate[coordinate]) - Number(object[coordinate]) === offset
+    ) || null;
+    return { before: matchingOpening(-1), after: matchingOpening(1) };
   }
 
   function drawObjects(context, size, layers) {
@@ -2060,7 +2753,11 @@
       if (object.category === "door" && !layers.doors) continue;
       if (object.category !== "door" && !layers.objects) continue;
       const rect = objectRect(object, size);
-      if (object.category === "door") drawDoorObject(context, object, rect, size);
+      const drewSprite = object.category !== "door" && object.category !== "window" && drawObjectSprite(context, object, rect);
+      if (drewSprite) {
+        // Image sprites replace the legacy symbolic object drawing when available.
+      } else if (object.category === "door") drawDoorObject(context, object, rect, size);
+      else if (object.category === "window") drawWindowObject(context, object, rect, size);
       else if (object.category === "sofa") drawSofaObject(context, object, rect, size);
       else if (object.category === "bed") drawBedObject(context, object, rect, size);
       else drawGenericObject(context, object, rect, size);
@@ -2071,7 +2768,7 @@
   function drawObjectControls(context, size) {
     const object = selectedObject();
     if (!object) return;
-    const rect = objectRect(object, size);
+    const rect = selectionRect(object, size);
     const controls = objectControlRects(object, size);
     context.save();
     context.strokeStyle = colors.selected;
@@ -2100,6 +2797,7 @@
   }
 
   function drawGenericObject(context, object, rect, size) {
+    if (drawObjectSprite(context, object, rect)) return;
     context.fillStyle = object.category === "plant" ? "#4f8748" : object.category === "table" ? "#8a6544" : "#7b5b3f";
     context.strokeStyle = "#3b3128";
     context.lineWidth = 2;
@@ -2139,32 +2837,89 @@
     context.restore();
   }
 
-  function drawDoorObject(context, object, rect, size) {
+  function drawWindowObject(context, object, rect, size) {
+    const runRole = wallModel.openingRunRole(state.doc, object);
+    const neighbors = adjacentWallOpenings(object);
     context.save();
-    context.fillStyle = "rgba(255, 246, 220, 0.58)";
+    context.fillStyle = "rgba(143, 202, 220, 0.78)";
     context.fillRect(rect.x, rect.y, rect.width, rect.height);
-    if (object.door_type === "sliding") drawSlidingDoorSymbol(context, object, rect, size);
-    else drawHingedDoorSymbol(context, object, rect, size);
+    drawOpeningFrame(context, object, rect, size, runRole, neighbors);
     context.restore();
   }
 
-  function drawHingedDoorSymbol(context, object, rect, size) {
-    const facing = object.facing || "north";
-    const geometry = doorGeometry(rect, facing, object.door_hinge || "start");
-    drawDoorOpenGuide(context, object, geometry, size);
-    drawDoorClosedLine(context, geometry.closed, Math.max(5, size * 0.12), "#2f2924");
+  function drawDoorObject(context, object, rect, size) {
+    const runRole = wallModel.openingRunRole(state.doc, object);
+    const neighbors = adjacentWallOpenings(object);
+    context.save();
+    drawOpeningFrame(context, object, rect, size, runRole, neighbors);
+    // The leaf stays anchored at the true 1-tile wall gap (matching the
+    // frame above), but the swing guide/arc reaches out across a 2x2 tile
+    // area from the hinge so it reads clearly instead of looking cramped
+    // inside a single cell.
+    const swingReach = size * 1.5;
+    if (object.door_type === "sliding") drawSlidingDoorSymbol(context, object, rect, size, swingReach);
+    else drawHingedDoorSymbol(context, object, rect, size, swingReach);
+    context.restore();
   }
 
-  function drawSlidingDoorSymbol(context, object, rect, size) {
+  function drawOpeningFrame(context, object, rect, size, runRole, neighbors) {
+    const axis = wallModel.openingOrientation(state.doc, object) || "horizontal";
+    const inset = Math.max(2, size * 0.08);
+    const drawBeforeJamb = runRole === "single" || runRole === "start" ||
+      (object.category === "door" && neighbors.before?.category === "window");
+    const drawAfterJamb = runRole === "single" || runRole === "end" ||
+      (object.category === "door" && neighbors.after?.category === "window");
+    context.strokeStyle = "#2f2924";
+    context.lineWidth = Math.max(2, size * 0.07);
+    context.beginPath();
+    if (axis === "horizontal") {
+      context.moveTo(rect.x, rect.y + inset);
+      context.lineTo(rect.x + rect.width, rect.y + inset);
+      context.moveTo(rect.x, rect.y + rect.height - inset);
+      context.lineTo(rect.x + rect.width, rect.y + rect.height - inset);
+      if (drawBeforeJamb) {
+        context.moveTo(rect.x + inset, rect.y);
+        context.lineTo(rect.x + inset, rect.y + rect.height);
+      }
+      if (drawAfterJamb) {
+        context.moveTo(rect.x + rect.width - inset, rect.y);
+        context.lineTo(rect.x + rect.width - inset, rect.y + rect.height);
+      }
+    } else {
+      context.moveTo(rect.x + inset, rect.y);
+      context.lineTo(rect.x + inset, rect.y + rect.height);
+      context.moveTo(rect.x + rect.width - inset, rect.y);
+      context.lineTo(rect.x + rect.width - inset, rect.y + rect.height);
+      if (drawBeforeJamb) {
+        context.moveTo(rect.x, rect.y + inset);
+        context.lineTo(rect.x + rect.width, rect.y + inset);
+      }
+      if (drawAfterJamb) {
+        context.moveTo(rect.x, rect.y + rect.height - inset);
+        context.lineTo(rect.x + rect.width, rect.y + rect.height - inset);
+      }
+    }
+    context.stroke();
+  }
+
+  function drawHingedDoorSymbol(context, object, rect, size, swingReach) {
+    const facing = object.facing || "north";
+    const axis = facing === "east" || facing === "west" ? "vertical" : "horizontal";
+    const geometry = doorGeometry(rect, facing, object.door_hinge || "start");
+    const swing = doorSwingGeometry(object, geometry, swingReach, axis);
+    drawDoorSwingArc(context, geometry.hinge, swing.radius, swing.closedAngle, swing.openAngle);
+    drawDoorLeafPanel(context, geometry.hinge, swing.end, size);
+  }
+
+  function drawSlidingDoorSymbol(context, object, rect, size, swingReach) {
     const geometry = doorGeometry(rect, object.facing || "north", object.door_hinge || "start");
     const horizontal = Math.abs(geometry.closed.x2 - geometry.closed.x1) >= Math.abs(geometry.closed.y2 - geometry.closed.y1);
     const offset = Math.max(4, size * 0.1);
     const secondary = horizontal
       ? { x1: geometry.closed.x1, y1: geometry.closed.y1 + offset, x2: geometry.closed.x2, y2: geometry.closed.y2 + offset }
       : { x1: geometry.closed.x1 + offset, y1: geometry.closed.y1, x2: geometry.closed.x2 + offset, y2: geometry.closed.y2 };
-    drawDoorClosedLine(context, secondary, Math.max(2, size * 0.05), "rgba(47, 41, 36, 0.5)");
-    drawDoorOpenGuide(context, object, geometry, size);
-    drawDoorClosedLine(context, geometry.closed, Math.max(5, size * 0.12), "#2f2924");
+    drawDoorLeafPanel(context, { x: secondary.x1, y: secondary.y1 }, { x: secondary.x2, y: secondary.y2 }, size, { alpha: 0.55 });
+    drawDoorLeafPanel(context, { x: geometry.closed.x1, y: geometry.closed.y1 }, { x: geometry.closed.x2, y: geometry.closed.y2 }, size);
   }
 
   function doorGeometry(rect, facing, hingePosition) {
@@ -2175,43 +2930,72 @@
       east: { x1: rect.x + rect.width - inset, y1: rect.y + inset, x2: rect.x + rect.width - inset, y2: rect.y + rect.height - inset },
       west: { x1: rect.x + inset, y1: rect.y + inset, x2: rect.x + inset, y2: rect.y + rect.height - inset }
     }[facing] || { x1: rect.x + inset, y1: rect.y + inset, x2: rect.x + rect.width - inset, y2: rect.y + inset };
-    const hinge = hingePosition === "end" ? { x: line.x2, y: line.y2 } : { x: line.x1, y: line.y1 };
-    return { closed: line, hinge };
+    const atEnd = hingePosition === "end";
+    const hinge = atEnd ? { x: line.x2, y: line.y2 } : { x: line.x1, y: line.y1 };
+    const far = atEnd ? { x: line.x1, y: line.y1 } : { x: line.x2, y: line.y2 };
+    // Angle measured from the hinge toward the far end of the wall gap, not
+    // just the line's own x1->x2 direction, so it is correct for either
+    // hinge corner (this previously ignored hinge position entirely).
+    const closedAngle = Math.atan2(far.y - hinge.y, far.x - hinge.x);
+    return { closed: line, hinge, closedAngle };
   }
 
-  function drawDoorClosedLine(context, line, width, color) {
-    context.strokeStyle = color;
-    context.lineWidth = width;
-    context.lineCap = "round";
-    context.beginPath();
-    context.moveTo(line.x1, line.y1);
-    context.lineTo(line.x2, line.y2);
-    context.stroke();
-  }
-
-  function drawDoorOpenGuide(context, object, geometry, size) {
-    const closedAngle = Math.atan2(geometry.closed.y2 - geometry.closed.y1, geometry.closed.x2 - geometry.closed.x1);
-    const swing = object.door_swing || "in";
-    const direction = swing === "out" || swing === "right" ? 1 : -1;
-    const openAngle = closedAngle + direction * (Math.PI / 2);
-    const length = Math.hypot(geometry.closed.x2 - geometry.closed.x1, geometry.closed.y2 - geometry.closed.y1);
+  function doorSwingGeometry(object, geometry, reach, axis) {
+    // The open angle always comes from the same perpendicular offset used
+    // for the 2x2 selection square and wall hiding (doorSwingCells), so the
+    // arc can never point somewhere outside the square it is drawn in.
+    const perpendicular = doorPerpendicularOffset(axis, object.door_swing || "in");
+    const openAngle = Math.atan2(perpendicular.y, perpendicular.x);
+    const naturalLength = Math.hypot(geometry.closed.x2 - geometry.closed.x1, geometry.closed.y2 - geometry.closed.y1);
+    const radius = reach ? Math.max(reach, naturalLength) : naturalLength;
     const end = {
-      x: geometry.hinge.x + Math.cos(openAngle) * length,
-      y: geometry.hinge.y + Math.sin(openAngle) * length
+      x: geometry.hinge.x + Math.cos(openAngle) * radius,
+      y: geometry.hinge.y + Math.sin(openAngle) * radius
     };
-    context.strokeStyle = "rgba(47, 41, 36, 0.38)";
-    context.lineWidth = Math.max(2, size * 0.04);
-    context.lineCap = "round";
-    context.setLineDash([6, 5]);
+    return { closedAngle: geometry.closedAngle, openAngle, radius, end };
+  }
+
+  function drawDoorLeafPanel(context, from, to, size, options) {
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    const length = Math.hypot(to.x - from.x, to.y - from.y);
+    if (length < 1) return;
+    const thickness = Math.max(4, size * 0.16);
+    const alpha = options?.alpha ?? 1;
+    context.save();
+    context.globalAlpha *= alpha;
+    context.translate(from.x, from.y);
+    context.rotate(angle);
+    const gradient = context.createLinearGradient(0, -thickness / 2, 0, thickness / 2);
+    gradient.addColorStop(0, "#d9a066");
+    gradient.addColorStop(0.5, "#ab7440");
+    gradient.addColorStop(1, "#8a5a2c");
+    context.fillStyle = gradient;
+    context.strokeStyle = "#5b3c1e";
+    context.lineWidth = Math.max(1, size * 0.035);
     context.beginPath();
-    context.moveTo(geometry.hinge.x, geometry.hinge.y);
-    context.lineTo(end.x, end.y);
+    context.roundRect(0, -thickness / 2, length, thickness, Math.min(thickness * 0.35, 3));
+    context.fill();
     context.stroke();
-    context.setLineDash([]);
-    context.strokeStyle = "rgba(47, 41, 36, 0.22)";
+    context.strokeStyle = "rgba(255, 244, 224, 0.35)";
+    context.lineWidth = Math.max(1, size * 0.02);
     context.beginPath();
-    context.arc(geometry.hinge.x, geometry.hinge.y, Math.min(length * 0.55, size * 0.7), closedAngle, openAngle, direction < 0);
+    context.moveTo(length * 0.1, 0);
+    context.lineTo(length * 0.9, 0);
     context.stroke();
+    context.restore();
+  }
+
+  function drawDoorSwingArc(context, hinge, radius, closedAngle, openAngle) {
+    // closedAngle and openAngle are always ~90 degrees apart; sweep the
+    // short way between them regardless of which is numerically larger.
+    const shortestDiff = Math.atan2(Math.sin(openAngle - closedAngle), Math.cos(openAngle - closedAngle));
+    context.save();
+    context.strokeStyle = "#2f2924";
+    context.lineWidth = Math.max(1.25, radius * 0.025);
+    context.beginPath();
+    context.arc(hinge.x, hinge.y, radius, closedAngle, openAngle, shortestDiff < 0);
+    context.stroke();
+    context.restore();
   }
 
   function drawSofaObject(context, object, rect, size) {
@@ -2330,6 +3114,39 @@
     }
   }
 
+  function drawWallPreview(context, size) {
+    if (!state.wallDraw) return;
+    const segment = wallModel.normalizeWallSegment(state.wallDraw, state.doc.map);
+    const x = Math.min(segment.start.x, segment.end.x) * size;
+    const y = Math.min(segment.start.y, segment.end.y) * size;
+    const width = (Math.abs(segment.end.x - segment.start.x) + 1) * size;
+    const height = (Math.abs(segment.end.y - segment.start.y) + 1) * size;
+    context.save();
+    context.fillStyle = "rgba(255, 248, 222, 0.68)";
+    context.strokeStyle = "#755735";
+    context.lineWidth = 3;
+    context.fillRect(x + 2, y + 2, width - 4, height - 4);
+    context.strokeRect(x + 2, y + 2, width - 4, height - 4);
+    context.restore();
+  }
+
+  function drawWallSegmentControls(context, size) {
+    if (state.tool !== "wall") return;
+    const segment = selectedWallSegment();
+    if (!segment) return;
+    context.save();
+    context.fillStyle = "#d8a64c";
+    context.strokeStyle = "#755735";
+    context.lineWidth = 3;
+    for (const rect of wallHandleRects(segment, size)) {
+      context.beginPath();
+      context.arc(rect.x + rect.width / 2, rect.y + rect.height / 2, rect.width / 2, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+    }
+    context.restore();
+  }
+
   function drawSelection(context, size) {
     if (!state.selected || state.selected.type !== "tile") return;
     context.strokeStyle = colors.selected;
@@ -2366,19 +3183,34 @@
 
   function drawDocument(context, size, options) {
     const layers = Object.assign({}, state.layers, options?.layers || {});
+    const editorOverlays = options?.editorOverlays !== false;
+    const wallLookup = buildWallRenderLookup(state.doc);
+    state.wallRenderLookup = wallLookup;
     if (options?.grid === false) layers.grid = false;
     context.clearRect(0, 0, state.doc.map.width * size, state.doc.map.height * size);
     context.fillStyle = colors.terrain.void;
     context.fillRect(0, 0, state.doc.map.width * size, state.doc.map.height * size);
     for (const tile of state.doc.tiles) drawTile(context, tile, size, layers);
+    if (layers.structure) {
+      const hiddenWallCells = doorHiddenWallCellKeys(state.doc);
+      for (const tile of wallLookup.wallTiles) {
+        if (hiddenWallCells.has(`${tile.x},${tile.y}`)) continue;
+        if (state.wallAssetsStatus === "ready" && state.wallAssets) drawConnectedWallLayer(context, tile, size, wallLookup, state.wallAssets);
+        else drawStructureFallback(context, tile, size);
+      }
+    }
     drawObjects(context, size, layers);
-    if (state.mode === "stage") drawStages(context, size);
+    if (editorOverlays && state.mode === "stage") drawStages(context, size);
     if (layers.grid) drawGrid(context, size);
     if (state.mode === "stage" && layers.path) drawPath(context, size);
     if (state.mode === "stage" && layers.markers) drawMarkers(context, size);
-    drawSelection(context, size);
-    if (layers.objects || layers.doors) drawObjectControls(context, size);
-    drawDragPreview(context, size);
+    if (editorOverlays) {
+      drawWallPreview(context, size);
+      drawWallSegmentControls(context, size);
+      drawSelection(context, size);
+      if (layers.objects || layers.doors) drawObjectControls(context, size);
+      drawDragPreview(context, size);
+    }
   }
 
   function render() {
@@ -2464,6 +3296,7 @@
     updateInspectorPanels();
     updateObjectFields();
     syncSelectedObjectFields();
+    refreshWallControls();
     if (state.selected?.type === "tile") {
       const tile = core.getTile(state.doc, state.selected.x, state.selected.y);
       elements.selectionSummary.textContent = `Tile ${state.selected.x}, ${state.selected.y} | ${tile.terrain} | ${tile.structure} | ${tile.room_id || "no room"}`;
@@ -2490,9 +3323,11 @@
     } else if (state.mode === "stage" && state.selected?.type === "path") {
       const path = activeStagePaths().find((item) => item.id === state.selected.id);
       elements.selectionSummary.textContent = path ? `${path.name || path.id} | ${path.points.length} points | width ${path.width_tiles || 1}` : "No path selected";
-    } else {
+    } else if (state.mode === "stage") {
       const stage = activeStage();
       elements.selectionSummary.textContent = stage ? `Stage ${stage.name}: ${stage.width} x ${stage.height} | top ${stage.top_direction || "north"}` : "No tile selected";
+    } else {
+      elements.selectionSummary.textContent = `Map ${state.doc.map.name}: ${state.doc.map.width} x ${state.doc.map.height}`;
     }
     const validation = core.validateDocument(state.doc);
     const scopedValidation = validationForCurrentScope(validation);
@@ -2508,12 +3343,18 @@
       item.className = "warning";
       elements.validationList.appendChild(item);
     }
+    if (state.wallAssetsWarning) {
+      const item = document.createElement("li");
+      item.textContent = state.wallAssetsWarning;
+      item.className = "warning";
+      elements.validationList.appendChild(item);
+    }
     elements.validationStatus.textContent = state.mode === "stage" ? `${scopedValidation.errors.length} stage errors (${validation.errors.length} all)` : `${validation.errors.length} errors`;
     refreshStagePreview(scopedValidation);
     try {
       const stage = activeStage();
       elements.prompt.value = stage ? core.buildPrompt(state.doc, stage.id) : "";
-    } catch (error) {
+    } catch {
       elements.prompt.value = "";
     }
   }
@@ -2561,6 +3402,8 @@
   }
 
   function exportSelectedMaps() {
+    normalizeMaps();
+    ensureAllMapWallStates();
     const maps = selectedMapsForExport().map((map) => clone(map));
     const bundle = {
       schema_version: 1,
@@ -2572,6 +3415,7 @@
 
   function exportMasterDocument() {
     normalizeMaps();
+    ensureAllMapWallStates();
     downloadText("grid-stage-builder-project.json", JSON.stringify(state.doc, null, 2), "application/json");
   }
 
@@ -2611,6 +3455,7 @@
       room_definitions: Array.isArray(source.room_definitions) ? source.room_definitions : clone(DEFAULT_ROOM_DEFINITIONS),
       objects: Array.isArray(source.objects) ? source.objects : [],
       object_definitions: Array.isArray(source.object_definitions) ? source.object_definitions : clone(DEFAULT_OBJECT_DEFINITIONS),
+      wall_segments: Array.isArray(source.wall_segments) ? source.wall_segments : undefined,
       paths: Array.isArray(source.paths) ? source.paths : [],
       markers: Array.isArray(source.markers) ? source.markers : [],
       stages: Array.isArray(source.stages) ? source.stages : []
@@ -2678,6 +3523,10 @@
     document.querySelectorAll("[data-paint-target]").forEach((button) => {
       button.addEventListener("click", () => setPaintValue(button.dataset.paintTarget, button.dataset.paintValue));
     });
+    document.querySelectorAll("[data-wall-action]").forEach((button) => {
+      button.addEventListener("click", () => setWallAction(button.dataset.wallAction));
+    });
+    elements.deleteWallSegment.addEventListener("click", deleteSelectedWallSegment);
     elements.roomType.addEventListener("change", () => {
       elements.objectRoomType.value = elements.roomType.value;
       renderObjectPalette();
@@ -2777,7 +3626,7 @@
     });
     [
       elements.objectWidth, elements.objectHeight, elements.objectFacing, elements.objectRotation,
-      elements.objectBlocking, elements.doorType, elements.doorSwing, elements.doorOpenState, elements.doorHinge,
+      elements.objectBlocking, elements.doorType,
       elements.markerType
     ].forEach((input) => input.addEventListener("change", refreshInspector));
     [
@@ -2786,7 +3635,7 @@
     ].forEach((input) => input.addEventListener("change", updateStageFromFields));
     [
       elements.selectedObjectWidth, elements.selectedObjectHeight, elements.selectedObjectFacing,
-      elements.selectedObjectBlocking, elements.selectedObjectOverlap, elements.selectedDoorType, elements.selectedDoorSwing, elements.selectedDoorOpenState, elements.selectedDoorHinge
+      elements.selectedObjectBlocking, elements.selectedObjectOverlap, elements.selectedDoorType
     ].forEach((input) => {
       input.addEventListener("change", updateSelectedObjectFromFields);
     });
@@ -2858,7 +3707,7 @@
       off.rotate(Math.PI / 2);
     }
     off.translate(-stage.x * size, -stage.y * size);
-    drawDocument(off, size, { layers: stagePngLayers(kind) });
+    drawDocument(off, size, { layers: stagePngLayers(kind), editorOverlays: false });
     off.restore();
     const link = document.createElement("a");
     link.href = offscreen.toDataURL("image/png");
@@ -2868,9 +3717,12 @@
 
   loadTheme();
   bindEvents();
+  preloadFloorTextures();
+  preloadFurnitureSprites();
   renderObjectPalette();
   normalizeMaps();
   saveDocument();
   refreshInspector();
   render();
+  loadWallAssets();
 })();

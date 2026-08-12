@@ -22,6 +22,24 @@ function functionBody(source, name) {
   throw new Error(`unterminated function ${name}`);
 }
 
+function functionSource(source, name) {
+  const start = source.indexOf(`function ${name}(`);
+  assert.notEqual(start, -1, `missing function ${name}`);
+  const open = source.indexOf("{", start);
+  let depth = 0;
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") depth -= 1;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`unterminated function ${name}`);
+}
+
+function loadFunction(source, name, bindings = {}) {
+  const names = Object.keys(bindings);
+  return Function(...names, `return (${functionSource(source, name)});`)(...names.map((key) => bindings[key]));
+}
+
 test("program copy is English only", () => {
   assert.doesNotMatch(html, /[ก-๙]/);
   assert.doesNotMatch(app, /[ก-๙]/);
@@ -135,8 +153,86 @@ test("renderer gates map layers independently", () => {
   assert.match(app, /object\.category === "door" && !layers\.doors/);
   assert.match(app, /if \(state\.mode === "stage" && layers\.path\) drawPath/);
   assert.match(app, /if \(state\.mode === "stage" && layers\.markers\) drawMarkers/);
-  assert.match(app, /if \(state\.mode === "stage"\) drawStages/);
+  assert.match(app, /if \(editorOverlays && state\.mode === "stage"\) drawStages/);
   assert.match(app, /if \(layers\.grid\) drawGrid/);
+});
+
+test("room renderer can use floor texture tiles instead of solid room colors", () => {
+  assert.match(app, /FLOOR_TEXTURES/);
+  assert.match(app, /assets\/floor-tiles\/pastel-house-v2\/wood\.png/);
+  assert.match(app, /function preloadFloorTextures/);
+  assert.match(app, /function floorTextureForRoom/);
+  assert.match(app, /function roomFillStyle/);
+  assert.match(app, /createPattern/);
+  assert.match(app, /context\.fillStyle = roomFillStyle\(context,\s*room,\s*preset\)/);
+  assert.match(app, /preloadFloorTextures\(\)/);
+});
+
+test("room texture renderer fills the full tile without inset seams", () => {
+  const body = functionBody(app, "drawRoomLayer");
+  assert.match(body, /context\.fillRect\(x,\s*y,\s*size,\s*size\)/);
+  assert.doesNotMatch(body, /fillRect\(x \+ 1,\s*y \+ 1,\s*size - 2,\s*size - 2\)/);
+});
+
+test("Walls is a dedicated map tool with four actions", () => {
+  assert.match(html, /data-tool="wall"[\s\S]*<kbd>W<\/kbd>[\s\S]*Walls/);
+  assert.match(html, /data-panel="walls"/);
+  assert.match(html, /data-wall-action="select"[\s\S]*data-wall-action="wall"[\s\S]*data-wall-action="window"[\s\S]*data-wall-action="door"/);
+  const paintPanel = html.match(/data-panel="tile"[\s\S]*?<\/section>/)?.[0] || "";
+  assert.doesNotMatch(paintPanel, /data-paint-value="wall"|data-paint-value="window"/);
+});
+
+test("wall drawing previews an axis locked segment and commits on pointer release", () => {
+  assert.match(app, /wallDraw:\s*null/);
+  assert.match(app, /axisLockedEndpoint/);
+  assert.match(app, /function drawWallPreview/);
+  assert.match(app, /function commitWallDraw/);
+});
+
+test("wall select interaction filters T and cross junction candidates by pointer axis", () => {
+  const downBody = functionBody(app, "handlePointerDown");
+  const selectionBody = functionBody(app, "selectWallSegmentAt");
+  assert.match(downBody, /selectWallSegmentAt\(point,\s*wallModel\.selectionAxisAtPoint\(point,\s*canvasPoint,\s*tileSize\(\)\)\)/);
+  assert.match(selectionBody, /wallSegmentsAt\(cell,\s*axis\)/);
+});
+
+test("Walls actions place one-cell openings and use wall attachment while dragging", () => {
+  assert.match(app, /function addWallOpening/);
+  assert.match(app, /width:\s*1,[\s\S]*height:\s*1/);
+  assert.match(app, /function updateOpeningOrientation/);
+  assert.match(app, /openingAttachment\(state\.doc,\s*object\)/);
+  assert.match(app, /state\.wallAction === "window" \|\| state\.wallAction === "door"/);
+});
+
+test("opening renderer receives adjacent run roles and draws doors above windows", () => {
+  assert.match(app, /openingRunRole\(state\.doc,\s*object\)/);
+  assert.match(app, /function drawWindowObject/);
+  assert.match(app, /function drawOpeningFrame/);
+  assert.match(app, /object\.category === "door" \? 2/);
+});
+
+test("door frame owns the jamb shared with an adjacent window", () => {
+  const body = functionBody(app, "drawOpeningFrame");
+  assert.match(body, /object\.category === "door"/);
+  assert.match(body, /neighbors\.before\?\.category === "window"/);
+  assert.match(body, /neighbors\.after\?\.category === "window"/);
+});
+
+test("editor and PNG export share the connected wall renderer", () => {
+  assert.match(app, /function loadWallAssets/);
+  assert.match(app, /function buildWallRenderLookup/);
+  assert.match(app, /function drawConnectedWallLayer/);
+  const documentBody = functionBody(app, "drawDocument");
+  assert.match(documentBody, /buildWallRenderLookup/);
+  assert.match(documentBody, /drawConnectedWallLayer/);
+  const exportBody = functionBody(app, "exportStagePng");
+  assert.match(exportBody, /drawDocument/);
+});
+
+test("missing wall assets keep a flat fallback and a warning", () => {
+  assert.match(app, /wallAssetsStatus/);
+  assert.match(app, /drawStructureFallback/);
+  assert.match(app, /Wall artwork unavailable/);
 });
 
 test("map manager is shown below selection and manages multiple maps", () => {
@@ -181,7 +277,7 @@ test("rectangle tool has drag preview and commits on pointer release", () => {
   assert.match(app, /if \(state\.tool === "rect"\)[\s\S]*drawRect\(state\.dragStart,\s*point,\s*"room"\)/);
 });
 
-test("room panel only exposes room type and uses preset colors", () => {
+test("room panel only exposes room type and keeps preset colors as texture fallback", () => {
   assert.doesNotMatch(html, /Room ID <input/);
   assert.doesNotMatch(html, /Color <input id="roomColorInput"/);
   assert.match(html, /<h2>Rooms<\/h2>/);
@@ -192,7 +288,7 @@ test("room panel only exposes room type and uses preset colors", () => {
   assert.match(app, /ROOM_TYPE_PRESETS/);
   assert.match(app, /living_room:\s*\{[\s\S]*color:\s*"#/);
   assert.match(app, /room\.color \|\| preset\.color/);
-  assert.match(app, /\$\{room\.color \|\| definition\.color \|\| preset\.color\}99/);
+  assert.match(app, /const fallback = `\$\{room\.color \|\| preset\.color\}99`/);
 });
 
 test("room type list removes hallway and entire house and adds cat room", () => {
@@ -210,8 +306,6 @@ test("object inspector supports facing and door-specific controls", () => {
   assert.match(app, /door:\s*"Door"/);
   assert.match(app, /room_id:\s*"common"[\s\S]*id:\s*"door"/);
   assert.match(html, /id="doorTypeInput"[\s\S]*Hinged[\s\S]*Sliding/);
-  assert.match(html, /id="doorSwingInput"[\s\S]*Swing in[\s\S]*Swing out/);
-  assert.match(html, /id="doorOpenStateInput"[\s\S]*Open[\s\S]*Closed/);
 });
 
 test("object inspector uses category buttons with editable catalog names", () => {
@@ -293,7 +387,10 @@ test("inspector panels and door fields are contextual", () => {
   assert.match(html, /class="field-row door-fields" hidden/);
   assert.match(app, /updateInspectorPanels/);
   assert.match(app, /updateObjectFields/);
-  assert.match(app, /elements\.doorFields\.hidden = elements\.objectCategory\.value !== "door"/);
+  const body = functionBody(app, "updateObjectFields");
+  assert.match(body, /const isDoor = elements\.objectCategory\.value === "door"/);
+  assert.match(body, /elements\.doorFields\.hidden = !isDoor/);
+  assert.match(body, /elements\.objectSizeFields\.hidden = isDoor/);
 });
 
 test("object renderer draws directional doors sofas and beds", () => {
@@ -303,6 +400,38 @@ test("object renderer draws directional doors sofas and beds", () => {
   assert.match(app, /drawSofaObject/);
   assert.match(app, /drawBedObject/);
   assert.match(app, /drawFacingArrow/);
+});
+
+test("object renderer can draw furniture sprite PNG assets", () => {
+  assert.match(app, /FURNITURE_SPRITES/);
+  assert.match(app, /assets\/furniture\/pastel-house-v2\/small_nightstand\.png/);
+  assert.match(app, /assets\/furniture\/pastel-house-v2\/bedside_table_lamp\.png/);
+  assert.match(app, /assets\/furniture\/pastel-house-v2\/bathroom_vanity_sink_wide\.png/);
+  assert.match(app, /function preloadFurnitureSprites/);
+  assert.match(app, /function drawObjectSprite/);
+  assert.match(app, /drawObjectSprite\(context,\s*object,\s*rect\)/);
+});
+
+test("sprite renderer can replace legacy generic object drawings", () => {
+  const body = functionBody(app, "furnitureSpriteForObject");
+  assert.match(body, /object\.sprite/);
+  assert.match(body, /FURNITURE_SPRITES\[object\.category\]/);
+  assert.match(body, /FURNITURE_SPRITES\[object\.id\]/);
+  assert.match(body, /legacySpriteKeyForObject\(object\)/);
+  assert.match(app, /function legacySpriteKeyForObject/);
+  assert.match(app, /normalizeSpriteLookup/);
+  assert.match(app, /sofa:\s*"blue_sofa"/);
+  assert.match(app, /floor_lamp:\s*"decorative_floor_lamp"/);
+  assert.match(app, /coffee_table:\s*"coffee_table"/);
+  const drawBody = functionBody(app, "drawObjects");
+  assert.match(drawBody, /const drewSprite = object\.category !== "door" && object\.category !== "window" && drawObjectSprite\(context,\s*object,\s*rect\)/);
+  assert.match(drawBody, /if \(drewSprite\)/);
+});
+
+test("existing projects receive new default furniture definitions without replacing custom ones", () => {
+  assert.match(app, /function mergeDefaultObjectDefinitions/);
+  assert.match(app, /definitionKey/);
+  assert.match(app, /mergeDefaultObjectDefinitions\(state\.doc\.object_definitions\)/);
 });
 
 test("object selection exposes canvas controls for move rotate and delete", () => {
@@ -333,27 +462,77 @@ test("selected object details edit the placed object live", () => {
   assert.match(app, /updateSelectedObjectFromFields/);
   assert.match(app, /elements\.selectedObjectWidth/);
   assert.match(app, /object\.allow_overlap = elements\.selectedObjectOverlap\.checked/);
-  assert.match(app, /elements\.selectedDoorFields\.hidden = object\.category !== "door"/);
+  assert.match(app, /elements\.selectedDoorFields\.hidden = !isDoor/);
+  assert.match(app, /elements\.selectedObjectSizeFields\.hidden = isDoor/);
   assert.match(app, /moveObjectTo\(object,\s*object\.x,\s*object\.y\)/);
+});
+
+test("rotating an opening restores its wall-facing orientation and materialized tiles", () => {
+  const body = functionBody(app, "rotateSelectedObject");
+  assert.match(body, /isWallOpening\(object\)/);
+  assert.match(body, /updateOpeningOrientation\(object\)/);
+  assert.match(body, /materializeWalls\(\)/);
+});
+
+test("deleting an opening rematerializes the supporting wall tiles", () => {
+  const body = functionBody(app, "deleteSelectedObject");
+  assert.match(body, /isWallOpening\(object\)/);
+  assert.match(body, /materializeWalls\(\)/);
+});
+
+test("editing selected opening fields restores wall-facing orientation and materialized tiles", () => {
+  const body = functionBody(app, "updateSelectedObjectFromFields");
+  assert.match(body, /isWallOpening\(object\)/);
+  assert.match(body, /updateOpeningOrientation\(object\)/);
+  assert.match(body, /materializeWalls\(\)/);
 });
 
 test("door renderer uses clearer hinged and sliding symbols", () => {
   assert.match(app, /drawHingedDoorSymbol/);
   assert.match(app, /drawSlidingDoorSymbol/);
-  assert.match(app, /drawDoorClosedLine/);
-  assert.match(app, /drawDoorOpenGuide/);
+  assert.match(app, /drawDoorLeafPanel/);
+  assert.match(app, /drawDoorSwingArc/);
   assert.match(app, /Math\.PI \/ 2/);
   assert.match(app, /door_swing/);
   assert.doesNotMatch(app, /drawDoorLabel/);
 });
 
-test("door hinge corner can be changed after placement", () => {
-  assert.match(html, /id="doorHingeInput"[\s\S]*Start corner[\s\S]*End corner/);
-  assert.match(html, /id="selectedDoorHingeInput"[\s\S]*Start corner[\s\S]*End corner/);
-  assert.match(app, /door_hinge:\s*elements\.doorHinge\.value/);
-  assert.match(app, /elements\.selectedDoorHinge\.value = object\.door_hinge \|\| "start"/);
-  assert.match(app, /object\.door_hinge = elements\.selectedDoorHinge\.value/);
+test("door hinge and swing dropdowns are removed in favor of the rotate control", () => {
+  assert.doesNotMatch(html, /doorHingeInput/);
+  assert.doesNotMatch(html, /doorSwingInput/);
+  assert.doesNotMatch(html, /selectedDoorHingeInput/);
+  assert.doesNotMatch(html, /selectedDoorSwingInput/);
+  assert.match(app, /object\.category === "door"/);
+  assert.match(app, /cycleDoorSwingOrientation/);
   assert.match(app, /doorGeometry\(rect,\s*facing,\s*object\.door_hinge \|\| "start"\)/);
+});
+
+test("rotating a selected door cycles through the four hinge x swing combinations", () => {
+  const DOOR_SWING_STATES = [
+    { hinge: "start", swing: "in" },
+    { hinge: "start", swing: "out" },
+    { hinge: "end", swing: "out" },
+    { hinge: "end", swing: "in" }
+  ];
+  const cycleDoorSwingOrientation = loadFunction(app, "cycleDoorSwingOrientation", { DOOR_SWING_STATES });
+  const object = { door_hinge: "start", door_swing: "in" };
+  cycleDoorSwingOrientation(object);
+  assert.deepEqual(object, { door_hinge: "start", door_swing: "out" });
+  cycleDoorSwingOrientation(object);
+  assert.deepEqual(object, { door_hinge: "end", door_swing: "out" });
+  cycleDoorSwingOrientation(object);
+  assert.deepEqual(object, { door_hinge: "end", door_swing: "in" });
+  cycleDoorSwingOrientation(object);
+  assert.deepEqual(object, { door_hinge: "start", door_swing: "in" });
+});
+
+test("door 2x2 swing square drives selection and hit testing consistently", () => {
+  assert.match(app, /function doorSwingCells/);
+  assert.match(app, /function selectionRect/);
+  const objectAtTileBody = functionBody(app, "objectAtTile");
+  assert.match(objectAtTileBody, /doorSwingCells\(state\.doc,\s*item\)/);
+  const selectionRectBody = functionBody(app, "selectionRect");
+  assert.match(selectionRectBody, /doorSwingCells\(state\.doc,\s*object\)/);
 });
 
 test("paint panel removes terrain and keeps doors as objects only", () => {
@@ -651,7 +830,7 @@ test("stage PNG export supports gameplay art and full layer presets", () => {
   assert.match(presetBody, /kind === "gameplay"[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true[\s\S]*objectLabels:\s*false/);
   assert.match(presetBody, /kind === "art"[\s\S]*objects:\s*true[\s\S]*doors:\s*true[\s\S]*objectLabels:\s*true[\s\S]*path:\s*false[\s\S]*markers:\s*false[\s\S]*grid:\s*true/);
   assert.match(presetBody, /objectLabels:\s*true[\s\S]*path:\s*true[\s\S]*markers:\s*true[\s\S]*grid:\s*true/);
-  assert.match(exportBody, /drawDocument\(off,\s*size,\s*\{ layers: stagePngLayers\(kind\) \}\)/);
+  assert.match(exportBody, /drawDocument\(off,\s*size,\s*\{ layers: stagePngLayers\(kind\),\s*editorOverlays:\s*false \}\)/);
   assert.match(app, /exportStageGameplayPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("gameplay"\)\)/);
   assert.match(app, /exportStageArtPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("art"\)\)/);
   assert.match(app, /exportStageFullPngBtn"\)\.addEventListener\("click", \(\) => exportStagePng\("full"\)\)/);

@@ -9,6 +9,8 @@
 })(typeof globalThis !== "undefined" ? globalThis : null, function createCore() {
   "use strict";
 
+  const WallModel = globalThis.GridWallModel || (typeof module === "object" && module.exports ? require("./wall-model.js") : null);
+
   const MAP_WIDTH = 48;
   const MAP_HEIGHT = 48;
   const TILE_SIZE = 48;
@@ -32,6 +34,13 @@
     { room_id: "common", id: "plant", name: "Plant" },
     { room_id: "common", id: "decoration", name: "Decoration" },
     { room_id: "common", id: "gameplay_obstacle", name: "Obstacle" },
+    { room_id: "common", id: "potted_plant_square", name: "Potted Plant Square" },
+    { room_id: "common", id: "potted_plant_round", name: "Potted Plant Round" },
+    { room_id: "common", id: "small_wall_drawer", name: "Small Wall Drawer" },
+    { room_id: "common", id: "tissue_box", name: "Tissue Box" },
+    { room_id: "common", id: "open_door_vertical", name: "Open Door Vertical" },
+    { room_id: "common", id: "wood_door_panel", name: "Wood Door Panel" },
+    { room_id: "common", id: "open_door_bottom", name: "Open Door Bottom" },
     { room_id: "living_room", id: "sofa", name: "Sofa" },
     { room_id: "living_room", id: "coffee_table", name: "Coffee Table" },
     { room_id: "living_room", id: "tv", name: "TV" },
@@ -40,6 +49,11 @@
     { room_id: "living_room", id: "bookshelf", name: "Bookshelf" },
     { room_id: "living_room", id: "armchair", name: "Armchair" },
     { room_id: "living_room", id: "floor_lamp", name: "Floor Lamp" },
+    { room_id: "living_room", id: "decorative_floor_lamp", name: "Decorative Floor Lamp" },
+    { room_id: "living_room", id: "brown_armchair", name: "Brown Armchair" },
+    { room_id: "living_room", id: "blue_armchair", name: "Blue Armchair" },
+    { room_id: "living_room", id: "single_speaker_left", name: "Single Speaker Left" },
+    { room_id: "living_room", id: "double_speaker_right", name: "Double Speaker Right" },
     { room_id: "kitchen", id: "fridge", name: "Fridge" },
     { room_id: "kitchen", id: "sink", name: "Sink" },
     { room_id: "kitchen", id: "stove", name: "Stove" },
@@ -60,6 +74,10 @@
     { room_id: "bedroom", id: "floor_lamp", name: "Floor Lamp" },
     { room_id: "bedroom", id: "rug", name: "Rug" },
     { room_id: "bedroom", id: "laundry_basket", name: "Laundry Basket" },
+    { room_id: "bedroom", id: "bedding_stack_with_curtain", name: "Bedding Stack With Curtain" },
+    { room_id: "bedroom", id: "bedroom_wash_basin", name: "Bedroom Wash Basin" },
+    { room_id: "bedroom", id: "bedside_table_lamp", name: "Bedside Table Lamp" },
+    { room_id: "bedroom", id: "small_nightstand", name: "Small Nightstand" },
     { room_id: "bathroom", id: "tub", name: "Tub" },
     { room_id: "bathroom", id: "toilet", name: "Toilet" },
     { room_id: "bathroom", id: "sink", name: "Sink" },
@@ -67,6 +85,9 @@
     { room_id: "bathroom", id: "medicine_cabinet", name: "Medicine Cabinet" },
     { room_id: "bathroom", id: "towel_shelf", name: "Towel Shelf" },
     { room_id: "bathroom", id: "bath_mat", name: "Bath Mat" },
+    { room_id: "bathroom", id: "toilet_side_unit", name: "Toilet Side Unit" },
+    { room_id: "bathroom", id: "bathroom_vanity_sink_wide", name: "Bathroom Vanity Sink Wide" },
+    { room_id: "bathroom", id: "bathroom_vanity_sink_small", name: "Bathroom Vanity Sink Small" },
     { room_id: "cat_room", id: "cat_tree", name: "Cat Tower" },
     { room_id: "cat_room", id: "litter_box", name: "Litter Box" },
     { room_id: "cat_room", id: "cat_bowl", name: "Cat Bowl" },
@@ -74,6 +95,10 @@
     { room_id: "cat_room", id: "cat_toy", name: "Cat Toy" },
     { room_id: "cat_room", id: "scratching_post", name: "Scratching Post" },
     { room_id: "cat_room", id: "cat_tunnel", name: "Cat Tunnel" },
+    { room_id: "cat_room", id: "cat_cushion_stack", name: "Cat Cushion Stack" },
+    { room_id: "cat_room", id: "pet_bowl_pair", name: "Pet Bowl Pair" },
+    { room_id: "cat_room", id: "cat_food_bag", name: "Cat Food Bag" },
+    { room_id: "cat_room", id: "square_pet_bed", name: "Square Pet Bed" },
     { room_id: "garden", id: "plant", name: "Plant" },
     { room_id: "garden", id: "potted_plant", name: "Potted Plant" },
     { room_id: "garden", id: "bush", name: "Bush" },
@@ -136,6 +161,7 @@
       paths: [],
       markers: [],
       stages: [],
+      wall_segments: [],
       maps: [{
         id: map.id,
         name: map.name,
@@ -147,7 +173,8 @@
         object_definitions: clone(DEFAULT_OBJECT_DEFINITIONS),
         paths: [],
         markers: [],
-        stages: []
+        stages: [],
+        wall_segments: []
       }]
     };
   }
@@ -379,6 +406,18 @@
       if (!inBounds(doc, marker.x, marker.y)) errors.push(`marker ${marker.id} is outside map.`);
     }
 
+    for (const object of doc.objects || []) {
+      if (object.category !== "window" && object.category !== "door") continue;
+      const attachment = WallModel?.openingAttachment(doc, object) || { attached: false, ambiguous: false };
+      if (!attachment.attached) {
+        warnings.push(`opening ${object.id} is not attached to a wall segment.`);
+        continue;
+      }
+      if (attachment.ambiguous) {
+        warnings.push(`opening ${object.id} is placed on an ambiguous wall junction.`);
+      }
+    }
+
     const blockingObjectLabel = (cell) => {
       const ids = blockingObjectsByCell.get(cellKey(cell.x, cell.y)) || [];
       return ids.length ? ` object ${ids.join(",")}` : " blocking object";
@@ -568,6 +607,11 @@
   }
 
   function exportStageJson(doc, stageId) {
+    doc = clone(doc);
+    if (WallModel) {
+      WallModel.migrateWallSegments(doc);
+      WallModel.materializeWallState(doc);
+    }
     const stage = stageForId(doc, stageId);
     if (!stage) throw new Error("No stage frame available.");
     const bounds = stageBounds(stage);
@@ -674,9 +718,33 @@
       mutateTile(doc, cell.x, cell.y, { structure: "none", build: "allowed" });
     }
     doc.objects.push(
-      { id: "blue_sofa", name: "Blue Sofa", category: "furniture", x: 7, y: 5, width: 7, height: 3, rotation: 0, room_id: "living_room", blocking: true, notes: "Large couch along north wall." },
-      { id: "coffee_table", name: "Coffee Table", category: "furniture", x: 8, y: 15, width: 5, height: 3, rotation: 0, room_id: "living_room", blocking: true, notes: "Central low table." },
-      { id: "plant_corner", name: "Corner Plant", category: "plant", x: 16, y: 7, width: 2, height: 2, rotation: 0, room_id: "living_room", blocking: true, notes: "Plant cover." },
+      { id: "blue_sofa", name: "Blue Sofa", category: "furniture", sprite: "assets/furniture/pastel-house-v2/blue_sofa_vertical.png", x: 7, y: 5, width: 7, height: 3, rotation: 0, room_id: "living_room", blocking: true, notes: "Large couch along north wall." },
+      { id: "coffee_table", name: "Coffee Table", category: "furniture", sprite: "assets/furniture/pastel-house-v2/living_rug_coffee_table.png", x: 8, y: 15, width: 5, height: 3, rotation: 0, room_id: "living_room", blocking: true, notes: "Central low table." },
+      { id: "plant_corner", name: "Corner Plant", category: "plant", sprite: "assets/furniture/pastel-house-v2/potted_plant_round.png", x: 16, y: 7, width: 2, height: 2, rotation: 0, room_id: "living_room", blocking: true, notes: "Plant cover." },
+      { id: "sample_small_nightstand", name: "Small Nightstand", category: "small_nightstand", x: 4, y: 5, width: 1, height: 1, rotation: 0, room_id: "living_room", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_potted_plant", name: "Potted Plant", category: "potted_plant_round", x: 17, y: 5, width: 1, height: 1, rotation: 0, room_id: "living_room", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_square_pet_bed", name: "Square Pet Bed", category: "square_pet_bed", x: 4, y: 25, width: 2, height: 2, rotation: 0, room_id: "living_room", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_blue_armchair", name: "Blue Armchair", category: "blue_armchair", x: 15, y: 27, width: 2, height: 2, rotation: 0, room_id: "living_room", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_bedding_stack_with_curtain", name: "Bedding Stack With Curtain", category: "bedding_stack_with_curtain", x: 20, y: 8, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_decorative_floor_lamp", name: "Decorative Floor Lamp", category: "decorative_floor_lamp", x: 23, y: 8, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_potted_plant_square", name: "Potted Plant Square", category: "potted_plant_square", x: 26, y: 8, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_cat_cushion_stack", name: "Cat Cushion Stack", category: "cat_cushion_stack", x: 28, y: 8, width: 1, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x2 sprite test." },
+      { id: "sample_pet_bowl_pair", name: "Pet Bowl Pair", category: "pet_bowl_pair", x: 30, y: 8, width: 2, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x1 sprite test." },
+      { id: "sample_cat_food_bag", name: "Cat Food Bag", category: "cat_food_bag", x: 26, y: 10, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_toilet_side_unit", name: "Toilet Side Unit", category: "toilet_side_unit", x: 20, y: 11, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_small_wall_drawer", name: "Small Wall Drawer", category: "small_wall_drawer", x: 23, y: 11, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_tissue_box", name: "Tissue Box", category: "tissue_box", x: 25, y: 11, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_bathroom_vanity_sink_wide", name: "Bathroom Vanity Sink Wide", category: "bathroom_vanity_sink_wide", x: 29, y: 11, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_brown_armchair", name: "Brown Armchair", category: "brown_armchair", x: 23, y: 14, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_open_door_vertical", name: "Open Door Vertical", category: "open_door_vertical", x: 29, y: 14, width: 1, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x2 sprite test." },
+      { id: "sample_single_speaker_left", name: "Single Speaker Left", category: "single_speaker_left", x: 31, y: 14, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_double_speaker_right", name: "Double Speaker Right", category: "double_speaker_right", x: 31, y: 15, width: 1, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x1 sprite test." },
+      { id: "sample_bathroom_vanity_sink_small", name: "Bathroom Vanity Sink Small", category: "bathroom_vanity_sink_small", x: 20, y: 17, width: 1, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x2 sprite test." },
+      { id: "sample_bedroom_wash_basin", name: "Bedroom Wash Basin", category: "bedroom_wash_basin", x: 22, y: 17, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_wood_door_panel", name: "Wood Door Panel", category: "wood_door_panel", x: 25, y: 17, width: 1, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x2 sprite test." },
+      { id: "sample_laundry_basket", name: "Laundry Basket", category: "laundry_basket", x: 27, y: 17, width: 2, height: 1, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x1 sprite test." },
+      { id: "sample_bedside_table_lamp", name: "Bedside Table Lamp", category: "bedside_table_lamp", x: 30, y: 17, width: 2, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "2x2 sprite test." },
+      { id: "sample_open_door_bottom", name: "Open Door Bottom", category: "open_door_bottom", x: 20, y: 20, width: 1, height: 2, rotation: 0, room_id: "kitchen", blocking: true, notes: "1x2 sprite test." },
       { id: "entry_door", name: "Entry Door", category: "door", x: 2, y: 16, width: 1, height: 2, rotation: 0, facing: "east", door_type: "hinged", door_swing: "in", open_state: "open", room_id: "living_room", blocking: false, notes: "Object-based door." },
       { id: "kitchen_door", name: "Kitchen Door", category: "door", x: 19, y: 20, width: 1, height: 2, rotation: 0, facing: "east", door_type: "sliding", door_swing: "right", open_state: "closed", room_id: "living_room", blocking: true, notes: "Object-based sliding door." }
     );
@@ -717,6 +785,16 @@
       build_tiles: [],
       waves: []
     });
+    doc.wall_segments = [
+      { id: "sample_wall_top", axis: "horizontal", start: { x: 2, y: 3 }, end: { x: 19, y: 3 } },
+      { id: "sample_wall_bottom", axis: "horizontal", start: { x: 2, y: 30 }, end: { x: 19, y: 30 } },
+      { id: "sample_wall_left", axis: "vertical", start: { x: 2, y: 3 }, end: { x: 2, y: 30 } },
+      { id: "sample_wall_right", axis: "vertical", start: { x: 19, y: 3 }, end: { x: 19, y: 30 } }
+    ];
+    if (WallModel) {
+      WallModel.migrateWallSegments(doc);
+      WallModel.materializeWallState(doc);
+    }
     doc.active_map_id = doc.map.id;
     doc.maps = [{
       id: doc.map.id,
@@ -729,7 +807,8 @@
       object_definitions: clone(doc.object_definitions || DEFAULT_OBJECT_DEFINITIONS),
       paths: clone(doc.paths),
       markers: clone(doc.markers),
-      stages: clone(doc.stages)
+      stages: clone(doc.stages),
+      wall_segments: clone(doc.wall_segments || [])
     }];
     return doc;
   }

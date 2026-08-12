@@ -375,7 +375,9 @@ button:focus-visible {
 
 .panel[hidden],
 .door-fields[hidden],
-.selected-door-fields[hidden] {
+.selected-door-fields[hidden],
+.object-size-fields[hidden],
+.selected-object-size-fields[hidden] {
   display: none;
 }
 
@@ -432,6 +434,17 @@ textarea {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   margin-bottom: 10px;
+}
+
+.wall-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.wall-actions + .summary {
+  margin-bottom: 8px;
 }
 
 .object-category-group {

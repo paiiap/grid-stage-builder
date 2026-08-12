@@ -1,6 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const core = require("../core.js");
+const walls = require("../wall-model.js");
 
 test("createDocument builds a 48 x 48 single-floor map", () => {
   const doc = core.createDocument();
@@ -29,6 +32,12 @@ test("createDocument includes editable room and object definitions", () => {
   assert(doc.object_definitions.some((object) => object.room_id === "common" && object.id === "door"));
   assert.deepEqual(doc.maps[0].room_definitions, doc.room_definitions);
   assert.deepEqual(doc.maps[0].object_definitions, doc.object_definitions);
+});
+
+test("new documents initialize wall segments for the active map and snapshot", () => {
+  const doc = core.createDocument();
+  assert.deepEqual(doc.wall_segments, []);
+  assert.deepEqual(doc.maps[0].wall_segments, []);
 });
 
 test("rotated object footprints stay grid aligned", () => {
@@ -116,6 +125,37 @@ test("sample stage path defaults to one tile wide", () => {
   assert.equal(stage.paths[0].width_tiles, 1);
 });
 
+test("sample document materializes its legacy wall tiles as editable segments", () => {
+  const doc = core.makeSampleDocument();
+  const coverage = walls.wallCoverage(doc.wall_segments);
+  const legacyWalls = doc.tiles.filter((tile) => tile.structure === "wall");
+  const openingCells = new Set(doc.objects
+    .filter((object) => object.category === "door" || object.category === "window")
+    .flatMap((object) => core.objectFootprint(object))
+    .map((cell) => `${cell.x},${cell.y}`));
+
+  assert(legacyWalls.length > 0);
+  assert.equal(doc.wall_segments.length > 0, true);
+  assert(legacyWalls.every((tile) => coverage.has(`${tile.x},${tile.y}`)));
+  assert.equal(Array.from(coverage).every((key) => {
+    const [x, y] = key.split(",").map(Number);
+    return core.getTile(doc, x, y).structure === "wall" || openingCells.has(key);
+  }), true);
+});
+
+test("stage GameJSON materializes tile structures from canonical wall segments", () => {
+  const doc = core.makeSampleDocument();
+  const coveredCells = walls.rasterizeWallSegment(doc.wall_segments[0]).slice(0, 2);
+  core.getTile(doc, coveredCells[0].x, coveredCells[0].y).structure = "none";
+  core.getTile(doc, coveredCells[1].x, coveredCells[1].y).structure = "blocked";
+
+  const stage = core.exportStageJson(doc, "stage_living_room");
+  const structures = coveredCells.map((cell) => stage.tiles.find((tile) => tile.master_x === cell.x && tile.master_y === cell.y)?.structure);
+
+  assert.deepEqual(structures, ["wall", "wall"]);
+  assert.equal(Object.hasOwn(stage, "wall_segments"), false);
+});
+
 test("prompt includes stage dimensions, rooms, path, and negative constraints", () => {
   const doc = core.makeSampleDocument();
   const prompt = core.buildPrompt(doc, "stage_living_room");
@@ -145,6 +185,118 @@ test("setTile keeps coordinates and patches editable fields", () => {
 test("valid sample document has no blocking validation errors", () => {
   const result = core.validateDocument(core.makeSampleDocument());
   assert.deepEqual(result.errors, []);
+});
+
+test("wall autotile showcase fixture is a loadable project", () => {
+  const fixturePath = path.join(__dirname, "fixtures", "wall-autotile-showcase.json");
+  const doc = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
+  const result = core.validateDocument(doc);
+
+  assert.deepEqual(result.errors, []);
+  assert.equal(doc.schema_version, 1);
+  assert.equal(doc.map.width, 48);
+  assert.equal(doc.map.height, 48);
+  assert.equal(doc.tiles.length, 2304);
+  assert.equal(doc.active_map_id, "wall_autotile_showcase");
+  assert.equal(doc.maps.length, 1);
+  assert.equal(doc.maps[0].id, doc.active_map_id);
+  assert.equal(doc.maps[0].map.width, 48);
+  assert.equal(doc.maps[0].map.height, 48);
+  assert.equal(doc.maps[0].tiles.length, 2304);
+  assert.deepEqual(doc.maps[0].wall_segments, doc.wall_segments);
+  assert.deepEqual(doc.maps[0].objects, doc.objects);
+  assert.deepEqual(result.warnings, [
+    "opening unattached_window is not attached to a wall segment.",
+    "opening unattached_door is not attached to a wall segment."
+  ]);
+});
+
+test("wall opening validation warns when an opening is unattached or ambiguous", () => {
+  const doc = core.createDocument();
+  doc.wall_segments = [
+    { id: "horizontal", axis: "horizontal", start: { x: 2, y: 5 }, end: { x: 8, y: 5 } },
+    { id: "vertical", axis: "vertical", start: { x: 5, y: 2 }, end: { x: 5, y: 8 } }
+  ];
+  doc.objects.push(
+    { id: "window_unattached", category: "window", x: 1, y: 1, width: 1, height: 1 },
+    { id: "door_junction", category: "door", x: 5, y: 5, width: 1, height: 1 },
+    { id: "window_straight", category: "window", x: 3, y: 5, width: 1, height: 1 }
+  );
+
+  const result = core.validateDocument(doc);
+
+  assert.deepEqual(result.errors, []);
+  assert(result.warnings.includes("opening window_unattached is not attached to a wall segment."));
+  assert(result.warnings.includes("opening door_junction is placed on an ambiguous wall junction."));
+  assert.equal(result.warnings.some((message) => message.includes("window_straight")), false);
+});
+
+test("wall opening validation checks every cell in an opening footprint", () => {
+  const doc = core.createDocument();
+  doc.wall_segments = [{ id: "vertical", axis: "vertical", start: { x: 5, y: 2 }, end: { x: 5, y: 5 } }];
+  doc.objects.push(
+    { id: "door_attached", category: "door", x: 5, y: 3, width: 1, height: 2 },
+    { id: "window_partial", category: "window", x: 5, y: 5, width: 2, height: 1 }
+  );
+
+  const result = core.validateDocument(doc);
+
+  assert.equal(result.warnings.some((message) => message.includes("door_attached")), false);
+  assert(result.warnings.includes("opening window_partial is not attached to a wall segment."));
+});
+
+test("unattached opening remains an object and produces one attachment warning", () => {
+  const doc = core.createDocument();
+  const opening = { id: "window_unattached", category: "window", x: 1, y: 1, width: 1, height: 1 };
+  doc.objects.push(opening);
+
+  const result = core.validateDocument(doc);
+
+  assert.equal(doc.objects.includes(opening), true);
+  assert.equal(result.warnings.filter((message) => message === "opening window_unattached is not attached to a wall segment.").length, 1);
+});
+
+test("sample document includes small furniture sprite placement trials", () => {
+  const doc = core.makeSampleDocument();
+  const expected = [
+    "bedding_stack_with_curtain",
+    "decorative_floor_lamp",
+    "potted_plant_square",
+    "cat_cushion_stack",
+    "pet_bowl_pair",
+    "cat_food_bag",
+    "toilet_side_unit",
+    "potted_plant_round",
+    "small_wall_drawer",
+    "tissue_box",
+    "bathroom_vanity_sink_wide",
+    "square_pet_bed",
+    "brown_armchair",
+    "blue_armchair",
+    "open_door_vertical",
+    "single_speaker_left",
+    "double_speaker_right",
+    "bathroom_vanity_sink_small",
+    "bedroom_wash_basin",
+    "wood_door_panel",
+    "laundry_basket",
+    "bedside_table_lamp",
+    "open_door_bottom",
+    "small_nightstand"
+  ];
+  const categories = new Set(doc.objects.map((object) => object.category));
+  for (const category of expected) assert(categories.has(category), `missing ${category}`);
+  assert(doc.objects.every((object) => !expected.includes(object.category) || (object.width <= 2 && object.height <= 2)));
+});
+
+test("legacy sample furniture objects use sprite images instead of generic blocks", () => {
+  const doc = core.makeSampleDocument();
+  const blueSofa = doc.objects.find((object) => object.id === "blue_sofa");
+  const coffeeTable = doc.objects.find((object) => object.id === "coffee_table");
+  const plant = doc.objects.find((object) => object.id === "plant_corner");
+  assert.match(blueSofa.sprite, /blue_sofa_vertical\.png$/);
+  assert.match(coffeeTable.sprite, /living_rug_coffee_table\.png$/);
+  assert.match(plant.sprite, /potted_plant_round\.png$/);
 });
 
 test("validation allows an object marked overlap allowed to sit on a blocking object", () => {

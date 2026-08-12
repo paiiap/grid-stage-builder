@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Grid Stage Builder</title>
   <link rel="stylesheet" href="styles.css">
+  <link rel="preload" href="assets/walls/pastel-wall-autotile-48.png" as="image">
+  <link rel="preload" href="assets/walls/pastel-window-overlays-48.png" as="image">
+  <link rel="preload" href="assets/walls/pastel-door-overlays-48.png" as="image">
 </head>
 <body>
   <main class="app-shell">
@@ -30,6 +33,7 @@
     <nav class="toolrail" aria-label="Map tools">
       <button class="tool active" data-mode-tool="all" data-tool="select" title="V - Select" type="button"><kbd>V</kbd><span>Select</span></button>
       <button class="tool" data-mode-tool="map" data-tool="tile" title="T - Paint" type="button"><kbd>T</kbd><span>Paint</span></button>
+      <button class="tool" data-mode-tool="map" data-tool="wall" title="W - Walls" type="button"><kbd>W</kbd><span>Walls</span></button>
       <button class="tool" data-mode-tool="map" data-tool="room" title="R - Rooms" type="button"><kbd>R</kbd><span>Rooms</span></button>
       <button class="tool" data-mode-tool="map" data-tool="rect" title="Q - Room box" type="button"><kbd>Q</kbd><span>Room box</span></button>
       <button class="tool" data-mode-tool="map" data-tool="object" title="O - Place home object" type="button"><kbd>O</kbd><span>Objects</span></button>
@@ -100,8 +104,6 @@
         <div class="paint-group" role="group" aria-label="Structure">
           <div class="paint-title">Structure</div>
           <button class="choice-btn active" data-paint-target="structure" data-paint-value="none" type="button">None</button>
-          <button class="choice-btn" data-paint-target="structure" data-paint-value="wall" type="button">Wall</button>
-          <button class="choice-btn" data-paint-target="structure" data-paint-value="window" type="button">Window</button>
           <button class="choice-btn" data-paint-target="structure" data-paint-value="blocked" type="button">Blocked</button>
         </div>
         <div class="paint-group" role="group" aria-label="Build status">
@@ -110,6 +112,18 @@
           <button class="choice-btn" data-paint-target="build" data-paint-value="blocked" type="button">Blocked</button>
           <button class="choice-btn" data-paint-target="build" data-paint-value="reserved" type="button">Reserved</button>
         </div>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="walls">
+        <h2>Walls</h2>
+        <div class="wall-actions" role="group" aria-label="Wall actions">
+          <button class="choice-btn" data-wall-action="select" type="button">Select</button>
+          <button class="choice-btn active" data-wall-action="wall" type="button">Wall</button>
+          <button class="choice-btn" data-wall-action="window" type="button">Window</button>
+          <button class="choice-btn" data-wall-action="door" type="button">Door</button>
+        </div>
+        <div id="wallSelectionSummary" class="summary">No wall selected</div>
+        <button id="deleteWallSegmentBtn" class="choice-btn" type="button" disabled>Delete selected wall</button>
       </section>
 
       <section class="panel" data-mode-panel="map" data-panel="room">
@@ -136,7 +150,7 @@
           <button id="addObjectDefinitionBtn" class="choice-btn" type="button">+ Object</button>
           <button id="deleteObjectDefinitionBtn" class="choice-btn" type="button">Delete</button>
         </div>
-        <div class="field-row">
+        <div class="field-row object-size-fields">
           <label>Width <input id="objectWidthInput" type="number" min="1" max="12" value="3"></label>
           <label>Height <input id="objectHeightInput" type="number" min="1" max="12" value="2"></label>
           <label>Direction
@@ -156,26 +170,6 @@
               <option value="sliding">Sliding</option>
             </select>
           </label>
-          <label>Open
-            <select id="doorSwingInput">
-              <option value="in">Swing in</option>
-              <option value="out">Swing out</option>
-              <option value="left">Left</option>
-              <option value="right">Right</option>
-            </select>
-          </label>
-          <label>State
-            <select id="doorOpenStateInput">
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-          </label>
-          <label>Hinge corner
-            <select id="doorHingeInput">
-              <option value="start">Start corner</option>
-              <option value="end">End corner</option>
-            </select>
-          </label>
         </div>
         <label class="checkline"><input id="objectBlockingInput" type="checkbox" checked> Blocking</label>
       </section>
@@ -183,7 +177,7 @@
       <section class="panel" data-mode-panel="map" data-panel="selected-object" hidden>
         <h2>Object Details</h2>
         <div id="selectedObjectSummary" class="summary">No object selected</div>
-        <div class="field-row">
+        <div class="field-row selected-object-size-fields">
           <label>Width <input id="selectedObjectWidthInput" type="number" min="1" max="12" value="1"></label>
           <label>Height <input id="selectedObjectHeightInput" type="number" min="1" max="12" value="1"></label>
           <label>Direction
@@ -200,26 +194,6 @@
             <select id="selectedDoorTypeInput">
               <option value="hinged">Hinged</option>
               <option value="sliding">Sliding</option>
-            </select>
-          </label>
-          <label>Open
-            <select id="selectedDoorSwingInput">
-              <option value="in">Swing in</option>
-              <option value="out">Swing out</option>
-              <option value="left">Left</option>
-              <option value="right">Right</option>
-            </select>
-          </label>
-          <label>State
-            <select id="selectedDoorOpenStateInput">
-              <option value="open">Open</option>
-              <option value="closed">Closed</option>
-            </select>
-          </label>
-          <label>Hinge corner
-            <select id="selectedDoorHingeInput">
-              <option value="start">Start corner</option>
-              <option value="end">End corner</option>
             </select>
           </label>
         </div>
@@ -337,6 +311,8 @@
 
   <input id="fileInput" type="file" accept="application/json,.json" hidden>
   <input id="mapBundleInput" type="file" accept="application/json,.json" multiple hidden>
+  <script src="assets/walls/pastel-wall-autotile.js?v=20260727-house"></script>
+  <script src="wall-model.js?v=20260727-house"></script>
   <script src="core.js?v=20260727-house"></script>
   <script src="app.js?v=20260727-house"></script>
 </body>
