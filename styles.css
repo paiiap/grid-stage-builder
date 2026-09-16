@@ -218,6 +218,23 @@ button:focus-visible {
   background: var(--rail-bg);
 }
 
+.tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-group + .tool-group {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.tool-group-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .tool {
   display: grid;
   grid-template-columns: 24px minmax(0, 1fr);
@@ -255,11 +272,17 @@ button:focus-visible {
   border-top: 1px solid var(--line);
 }
 
-.rail-layers h2 {
+.rail-layers h2,
+.tool-group-label {
   margin: 0 0 8px;
   color: var(--muted);
   font-size: 11px;
   letter-spacing: 0;
+}
+
+.tool-group-label {
+  margin: 0 0 2px;
+  padding: 0 6px;
 }
 
 .rail-view-controls {
@@ -324,6 +347,7 @@ button:focus-visible {
 }
 
 .tool[hidden],
+.tool-group[hidden],
 [data-mode-action][hidden] {
   display: none;
 }
@@ -456,6 +480,45 @@ textarea {
   height: auto;
   padding: 6px 7px;
   line-height: 1.15;
+}
+
+.object-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.object-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background-color: #7b5b3f;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: #fffaf0;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: grab;
+}
+
+.object-preview-icon:active {
+  cursor: grabbing;
+}
+
+.object-preview-hint {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.rotate-object-btn {
+  margin-bottom: 8px;
 }
 
 .paint-title {

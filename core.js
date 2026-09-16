@@ -826,6 +826,7 @@
     setTile,
     rectCells,
     objectFootprint,
+    rotatedSize,
     rasterizePath,
     pathAreaCells,
     stageBounds,

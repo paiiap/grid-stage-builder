@@ -333,7 +333,7 @@ test("object catalog is grouped by selected room type", () => {
 });
 
 test("object panel exposes its own room selector for object catalog", () => {
-  assert.match(html, /id="objectRoomList"/);
+  assert.match(html, /<select id="objectRoomTypeInput"/);
   assert.match(html, /id="objectNameInput"/);
   assert.match(html, /id="addObjectDefinitionBtn"[\s\S]*\+ Object/);
   assert.match(html, /id="deleteObjectDefinitionBtn"[\s\S]*Delete/);
@@ -585,19 +585,19 @@ test("stage detail controls only show while using the stage frame tool", () => {
   assert.match(app, /elements\.stageDetail\.hidden = state\.mode !== "stage" \|\| state\.tool !== "stage"/);
 });
 
-test("stage mode tool order puts stage marker path and path area before erase and pan", () => {
+test("toolrail groups general tools before mode-specific stage tools, in stage order", () => {
+  const eraseIndex = html.indexOf('data-mode-tool="all" data-tool="erase"');
+  const panIndex = html.indexOf('data-mode-tool="all" data-tool="pan"');
   const stageIndex = html.indexOf('data-mode-tool="stage" data-tool="stage"');
   const markerIndex = html.indexOf('data-mode-tool="stage" data-tool="marker"');
   const pathIndex = html.indexOf('data-mode-tool="stage" data-tool="path"');
   const pathAreaIndex = html.indexOf('data-mode-tool="stage" data-tool="path_area"');
-  const eraseIndex = html.indexOf('data-mode-tool="all" data-tool="erase"');
-  const panIndex = html.indexOf('data-mode-tool="all" data-tool="pan"');
-  assert(stageIndex > 0);
+  assert(eraseIndex > 0);
+  assert(eraseIndex < panIndex);
+  assert(panIndex < stageIndex);
   assert(stageIndex < markerIndex);
   assert(markerIndex < pathIndex);
   assert(pathIndex < pathAreaIndex);
-  assert(pathAreaIndex < eraseIndex);
-  assert(eraseIndex < panIndex);
 });
 
 test("stage inspector panels are scoped to the selected stage tool", () => {

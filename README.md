@@ -29,6 +29,10 @@ No install step is required.
 - Show validation errors with stage context, path context, and blocking object references.
 - Switch between classic, dark, and pastel UI themes.
 
+## Scale
+
+1 tile = 48x48 px in the editor and exports, which maps to roughly **60 cm** in the real world. This scale was picked by checking it against common furniture sizes: a 4x1-tile kitchen counter comes out to 240x60 cm (matching the standard 60 cm counter depth), and a 3x2-tile sofa or tub both land at 180x120 cm, close to real dimensions.
+
 ## Main Workflow
 
 1. Open the editor in a browser.

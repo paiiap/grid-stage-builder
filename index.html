@@ -31,25 +31,44 @@
     </header>
 
     <nav class="toolrail" aria-label="Map tools">
-      <button class="tool active" data-mode-tool="all" data-tool="select" title="V - Select" type="button"><kbd>V</kbd><span>Select</span></button>
-      <button class="tool" data-mode-tool="map" data-tool="tile" title="T - Paint" type="button"><kbd>T</kbd><span>Paint</span></button>
-      <button class="tool" data-mode-tool="map" data-tool="wall" title="W - Walls" type="button"><kbd>W</kbd><span>Walls</span></button>
-      <button class="tool" data-mode-tool="map" data-tool="room" title="R - Rooms" type="button"><kbd>R</kbd><span>Rooms</span></button>
-      <button class="tool" data-mode-tool="map" data-tool="rect" title="Q - Room box" type="button"><kbd>Q</kbd><span>Room box</span></button>
-      <button class="tool" data-mode-tool="map" data-tool="object" title="O - Place home object" type="button"><kbd>O</kbd><span>Objects</span></button>
-      <button class="tool" data-mode-tool="stage" data-tool="stage" title="F - Stage frame" type="button"><kbd>F</kbd><span>Stage</span></button>
-      <button class="tool" data-mode-tool="stage" data-tool="marker" title="M - Game points" type="button"><kbd>M</kbd><span>Game Points</span></button>
-      <button class="tool" data-mode-tool="stage" data-tool="path" title="P - Path" type="button"><kbd>P</kbd><span>Path</span></button>
-      <button class="tool" data-mode-tool="stage" data-tool="path_area" title="X - Expand path" type="button"><kbd>X</kbd><span>Path Area</span></button>
-      <button class="tool" data-mode-tool="all" data-tool="erase" title="E - Erase" type="button"><kbd>E</kbd><span>Delete</span></button>
-      <button class="tool" data-mode-tool="all" data-tool="pan" title="H - Pan" type="button"><kbd>H</kbd><span>Pan</span></button>
+      <div class="tool-group" data-mode-tool="all">
+        <h2 class="tool-group-label">General</h2>
+        <div class="tool-group-buttons">
+          <button class="tool active" data-mode-tool="all" data-tool="select" title="V - Select" type="button"><kbd>V</kbd><span>Select</span></button>
+          <button class="tool" data-mode-tool="all" data-tool="erase" title="E - Erase" type="button"><kbd>E</kbd><span>Delete</span></button>
+          <button class="tool" data-mode-tool="all" data-tool="pan" title="H - Pan" type="button"><kbd>H</kbd><span>Pan</span></button>
+        </div>
+      </div>
+
+      <div class="tool-group" data-mode-tool="map">
+        <h2 class="tool-group-label">Map Tools</h2>
+        <div class="tool-group-buttons">
+          <button class="tool" data-mode-tool="map" data-tool="tile" title="T - Paint" type="button"><kbd>T</kbd><span>Paint</span></button>
+          <button class="tool" data-mode-tool="map" data-tool="wall" title="W - Walls" type="button"><kbd>W</kbd><span>Walls</span></button>
+          <button class="tool" data-mode-tool="map" data-tool="room" title="R - Rooms" type="button"><kbd>R</kbd><span>Rooms</span></button>
+          <button class="tool" data-mode-tool="map" data-tool="rect" title="Q - Room box" type="button"><kbd>Q</kbd><span>Room box</span></button>
+          <button class="tool" data-mode-tool="map" data-tool="object" title="O - Place home object" type="button"><kbd>O</kbd><span>Objects</span></button>
+        </div>
+      </div>
+
+      <div class="tool-group" data-mode-tool="stage">
+        <h2 class="tool-group-label">Stage Tools</h2>
+        <div class="tool-group-buttons">
+          <button class="tool" data-mode-tool="stage" data-tool="stage" title="F - Stage frame" type="button"><kbd>F</kbd><span>Stage</span></button>
+          <button class="tool" data-mode-tool="stage" data-tool="marker" title="M - Game points" type="button"><kbd>M</kbd><span>Game Points</span></button>
+          <button class="tool" data-mode-tool="stage" data-tool="path" title="P - Path" type="button"><kbd>P</kbd><span>Path</span></button>
+          <button class="tool" data-mode-tool="stage" data-tool="path_area" title="X - Expand path" type="button"><kbd>X</kbd><span>Path Area</span></button>
+        </div>
+      </div>
 
       <section class="rail-layers" aria-label="Layer show hide">
+        <h2>VIEW</h2>
         <div class="rail-view-controls" aria-label="View controls">
           <button id="zoomOutBtn" title="Zoom out" type="button">-</button>
           <button id="zoomInBtn" title="Zoom in" type="button">+</button>
           <button id="gridBtn" title="Toggle grid" type="button">#</button>
         </div>
+        <h2>THEME</h2>
         <div class="rail-theme-controls" aria-label="Theme controls">
           <button class="theme-choice active" data-theme-choice="classic" title="Classic theme" type="button"><span class="theme-dot theme-dot-classic"></span></button>
           <button class="theme-choice" data-theme-choice="dark" title="Dark theme" type="button"><span class="theme-dot theme-dot-dark"></span></button>
@@ -141,11 +160,16 @@
 
       <section class="panel" data-mode-panel="map" data-panel="object">
         <h2>Objects</h2>
-        <input id="objectRoomTypeInput" type="hidden" value="living_room">
-        <div id="objectRoomList" class="stage-list" aria-label="Object room selector"></div>
+        <label>Room
+          <select id="objectRoomTypeInput" aria-label="Room"></select>
+        </label>
         <input id="objectCategoryInput" type="hidden" value="sofa">
         <div id="objectCategoryButtons" class="paint-group object-category-group" role="group" aria-label="Object categories"></div>
         <label>Object name <input id="objectNameInput" value="Sofa"></label>
+        <div class="object-preview">
+          <div id="objectPreviewIcon" class="object-preview-icon" draggable="true" title="Drag onto the room to place"></div>
+          <span class="object-preview-hint">Drag onto the room to place</span>
+        </div>
         <div class="field-row">
           <button id="addObjectDefinitionBtn" class="choice-btn" type="button">+ Object</button>
           <button id="deleteObjectDefinitionBtn" class="choice-btn" type="button">Delete</button>
@@ -177,6 +201,7 @@
       <section class="panel" data-mode-panel="map" data-panel="selected-object" hidden>
         <h2>Object Details</h2>
         <div id="selectedObjectSummary" class="summary">No object selected</div>
+        <button id="rotateSelectedObjectBtn" class="choice-btn rotate-object-btn" type="button">&#8635; Rotate 90&deg;</button>
         <div class="field-row selected-object-size-fields">
           <label>Width <input id="selectedObjectWidthInput" type="number" min="1" max="12" value="1"></label>
           <label>Height <input id="selectedObjectHeightInput" type="number" min="1" max="12" value="1"></label>

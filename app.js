@@ -400,11 +400,11 @@
     roomColor: document.getElementById("roomColorInput"),
     addRoom: document.getElementById("addRoomBtn"),
     deleteRoom: document.getElementById("deleteRoomBtn"),
-    objectRoomList: document.getElementById("objectRoomList"),
     objectRoomType: document.getElementById("objectRoomTypeInput"),
     objectCategory: document.getElementById("objectCategoryInput"),
     objectCategoryButtons: document.getElementById("objectCategoryButtons"),
     objectName: document.getElementById("objectNameInput"),
+    objectPreviewIcon: document.getElementById("objectPreviewIcon"),
     addObjectDefinition: document.getElementById("addObjectDefinitionBtn"),
     deleteObjectDefinition: document.getElementById("deleteObjectDefinitionBtn"),
     objectWidth: document.getElementById("objectWidthInput"),
@@ -416,6 +416,7 @@
     doorFields: document.querySelector(".door-fields"),
     doorType: document.getElementById("doorTypeInput"),
     selectedObjectSummary: document.getElementById("selectedObjectSummary"),
+    rotateSelectedObjectBtn: document.getElementById("rotateSelectedObjectBtn"),
     selectedObjectWidth: document.getElementById("selectedObjectWidthInput"),
     selectedObjectHeight: document.getElementById("selectedObjectHeightInput"),
     selectedObjectFacing: document.getElementById("selectedObjectFacingInput"),
@@ -1533,8 +1534,9 @@
   }
 
   function moveObjectTo(object, x, y) {
-    object.x = clamp(x, 0, state.doc.map.width - Math.max(1, object.width || 1));
-    object.y = clamp(y, 0, state.doc.map.height - Math.max(1, object.height || 1));
+    const size = core.rotatedSize(object);
+    object.x = clamp(x, 0, state.doc.map.width - Math.max(1, size.width));
+    object.y = clamp(y, 0, state.doc.map.height - Math.max(1, size.height));
     object.room_id = core.getTile(state.doc, object.x, object.y)?.room_id || null;
   }
 
@@ -1551,9 +1553,6 @@
       afterChange(true);
       return;
     }
-    const width = object.width || 1;
-    object.width = object.height || 1;
-    object.height = width;
     object.rotation = ((Number(object.rotation || 0) + 90) % 360);
     object.facing = rotateFacing(object.facing);
     moveObjectTo(object, object.x, object.y);
@@ -1905,6 +1904,7 @@
     elements.objectName.value = objectDefinitionLabel(category);
     refreshObjectCategoryButtons();
     updateObjectFields();
+    updateObjectPreviewIcon();
   }
 
   function objectCategoryRooms() {
@@ -1927,6 +1927,21 @@
     if (!categories.includes(elements.objectCategory.value)) setObjectCategory(categories[0] || "door");
     else refreshObjectCategoryButtons();
     elements.objectName.value = objectDefinitionLabel(elements.objectCategory.value);
+    updateObjectPreviewIcon();
+  }
+
+  function updateObjectPreviewIcon() {
+    const category = elements.objectCategory.value;
+    const icon = elements.objectPreviewIcon;
+    const sprite = FURNITURE_SPRITES[category];
+    if (sprite) {
+      icon.style.backgroundImage = `url("${sprite}")`;
+      icon.textContent = "";
+    } else {
+      icon.style.backgroundImage = "none";
+      icon.textContent = (elements.objectName.value || category || "?").trim().slice(0, 2).toUpperCase();
+    }
+    icon.dataset.objectCategory = category;
   }
 
   function refreshObjectCategoryButtons() {
@@ -1975,13 +1990,23 @@
     elements.selectedObjectSizeFields.hidden = isDoor;
     syncingSelectedObjectFields = true;
     elements.selectedObjectSummary.textContent = `${object.name || object.id} | ${object.x}, ${object.y}`;
-    elements.selectedObjectWidth.value = object.width || 1;
-    elements.selectedObjectHeight.value = object.height || 1;
+    const displaySize = core.rotatedSize(object);
+    elements.selectedObjectWidth.value = displaySize.width;
+    elements.selectedObjectHeight.value = displaySize.height;
     elements.selectedObjectFacing.value = object.facing || "south";
     elements.selectedObjectBlocking.checked = Boolean(object.blocking);
     elements.selectedObjectOverlap.checked = Boolean(object.allow_overlap);
     elements.selectedDoorType.value = object.door_type || "hinged";
     syncingSelectedObjectFields = false;
+  }
+
+  const FACING_ORDER = ["north", "east", "south", "west"];
+
+  function facingSteps(from, to) {
+    const a = FACING_ORDER.indexOf(from);
+    const b = FACING_ORDER.indexOf(to);
+    if (a === -1 || b === -1) return 0;
+    return (b - a + FACING_ORDER.length) % FACING_ORDER.length;
   }
 
   function updateSelectedObjectFromFields() {
@@ -1990,9 +2015,16 @@
     if (!object) return;
     pushHistory();
     if (object.category !== "door") {
-      object.width = clamp(Number(elements.selectedObjectWidth.value || 1), 1, 12);
-      object.height = clamp(Number(elements.selectedObjectHeight.value || 1), 1, 12);
-      object.facing = elements.selectedObjectFacing.value;
+      const newFacing = elements.selectedObjectFacing.value;
+      const oldRotation = Number(object.rotation || 0) % 360;
+      const oldRotated = oldRotation === 90 || oldRotation === 270;
+      const displayWidth = clamp(Number(elements.selectedObjectWidth.value || 1), 1, 12);
+      const displayHeight = clamp(Number(elements.selectedObjectHeight.value || 1), 1, 12);
+      const steps = facingSteps(object.facing || "south", newFacing);
+      object.width = oldRotated ? displayHeight : displayWidth;
+      object.height = oldRotated ? displayWidth : displayHeight;
+      object.rotation = (oldRotation + steps * 90) % 360;
+      object.facing = newFacing;
     }
     object.blocking = elements.selectedObjectBlocking.checked;
     object.allow_overlap = elements.selectedObjectOverlap.checked;
@@ -2192,21 +2224,18 @@
 
   function renderObjectRoomList() {
     ensureDefinitions();
-    elements.objectRoomList.innerHTML = "";
+    const select = elements.objectRoomType;
+    const currentId = select.value;
+    select.innerHTML = "";
     for (const room of state.doc.room_definitions) {
-      const button = document.createElement("button");
-      button.className = "stage-list-item";
-      button.type = "button";
-      button.dataset.objectRoomId = room.id;
-      button.classList.toggle("active", room.id === elements.objectRoomType.value);
-      button.textContent = room.name || room.id;
-      button.addEventListener("click", () => {
-        elements.objectRoomType.value = room.id;
-        renderObjectPalette();
-        refreshInspector();
-      });
-      elements.objectRoomList.appendChild(button);
+      const option = document.createElement("option");
+      option.value = room.id;
+      option.textContent = room.name || room.id;
+      select.appendChild(option);
     }
+    select.value = state.doc.room_definitions.some((room) => room.id === currentId)
+      ? currentId
+      : (state.doc.room_definitions[0]?.id || "");
   }
 
   function setActiveRoomDefinition(id) {
@@ -3316,7 +3345,8 @@
       }
     } else if (state.selected?.type === "object") {
       const object = selectedObject();
-      elements.selectionSummary.textContent = object ? `${object.name || object.id} | ${object.x}, ${object.y} | ${object.width} x ${object.height}` : "No object selected";
+      const size = object ? core.rotatedSize(object) : null;
+      elements.selectionSummary.textContent = object ? `${object.name || object.id} | ${object.x}, ${object.y} | ${size.width} x ${size.height}` : "No object selected";
     } else if (state.mode === "stage" && state.selected?.type === "marker") {
       const marker = activeStageMarkers().find((item) => item.id === state.selected.id);
       elements.selectionSummary.textContent = marker ? `${markerLabel(marker)} | ${marker.type} | ${marker.x}, ${marker.y}` : "No marker selected";
@@ -3535,6 +3565,30 @@
     elements.objectRoomType.addEventListener("change", () => {
       renderObjectPalette();
       refreshInspector();
+    });
+    elements.objectPreviewIcon.addEventListener("dragstart", (event) => {
+      event.dataTransfer.setData("text/plain", elements.objectCategory.value);
+      event.dataTransfer.effectAllowed = "copy";
+    });
+    canvas.addEventListener("dragover", (event) => {
+      if (state.mode !== "map") return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    });
+    canvas.addEventListener("drop", (event) => {
+      event.preventDefault();
+      const category = event.dataTransfer.getData("text/plain");
+      if (!category || state.mode !== "map") return;
+      elements.objectCategory.value = category;
+      const point = canvasToTile(event);
+      pushHistory();
+      addObject(point.x, point.y);
+      afterChange(true);
+    });
+    elements.rotateSelectedObjectBtn.addEventListener("click", () => {
+      pushHistory();
+      rotateSelectedObject();
+      afterChange(true);
     });
     elements.roomName.addEventListener("change", updateRoomDefinitionName);
     elements.addRoom.addEventListener("click", addRoomDefinition);
