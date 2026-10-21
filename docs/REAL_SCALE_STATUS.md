@@ -36,11 +36,12 @@ what renderers (e.g. the Pawtectors Blender build) can read. Field reference: `R
 
 ## Git
 
-- [ ] Fix "dubious ownership" for this folder (the E: drive does not record file owners):
+- [x] Fix "dubious ownership" for this folder (the E: drive does not record file owners):
       `git config --global --add safe.directory E:/@job/2026/15pawtectors/grid-stage-builder`
-- [ ] New branch, e.g. `feature/real-scale` (not straight to `main`)
-- [ ] Commit only this work: `real-scale.js`, `app.js`, `core.js`, `index.html`, `README.md`, `docs/REAL_SCALE_STATUS.md`
-- [ ] Leave out files that were untracked before this work: `assets/floor-tiles/`, `assets/furniture/`,
+- [x] New branch `feature/real-scale` (not straight to `main`)
+- [x] Commit only this work (59d72c5): `real-scale.js`, `app.js`, `core.js`, `index.html`, `README.md`, `docs/REAL_SCALE_STATUS.md`
+- [x] Leave out files that were untracked before this work: `assets/floor-tiles/`, `assets/furniture/`,
       `assets/maps/`, `assets/wall-pieces/`, `assets/wall-tiles/`, `docs/objects.numbers`, `docs/._objects.numbers`
       (decide separately: commit or `.gitignore`)
+- [ ] Decide on those untracked files (commit or `.gitignore`)
 - [ ] Tests pass before merging
