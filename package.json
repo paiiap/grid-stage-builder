@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": false,
   "scripts": {
-    "test": "node --test tests/ui-static.test.js tests/core.test.js tests/wall-model.test.js tests/wall-assets.test.js",
-    "check": "node --check app.js && node --check core.js && node --check wall-model.js"
+    "test": "node --test tests/ui-static.test.js tests/core.test.js tests/wall-model.test.js tests/wall-assets.test.js tests/real-scale.test.js",
+    "check": "node --check app.js && node --check core.js && node --check wall-model.js && node --check real-scale.js"
   }
 }

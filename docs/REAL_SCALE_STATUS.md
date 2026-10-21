@@ -27,8 +27,8 @@ what renderers (e.g. the Pawtectors Blender build) can read. Field reference: `R
 
 ## To do
 
-- [ ] Run `npm test` (no Node.js on the machine used for this work) and fix anything it finds
-- [ ] Tests for `real-scale.js` (`realRect`, `doorOpening`, `wallGeometry`)
+- [x] `npm test`: 146 / 146 pass (ran with the Node.js bundled with Adobe Creative Cloud, v24.19.0)
+- [x] Tests for `real-scale.js` (`tests/real-scale.test.js`)
 - [ ] Tool to draw / edit `thin_walls`
 - [ ] Tool to draw / edit `decor_paths`
 - [ ] Decide whether `thin_walls` should block paths (edge blocking is not modelled; tiles only)
@@ -44,4 +44,4 @@ what renderers (e.g. the Pawtectors Blender build) can read. Field reference: `R
       `assets/maps/`, `assets/wall-pieces/`, `assets/wall-tiles/`, `docs/objects.numbers`, `docs/._objects.numbers`
       (decide separately: commit or `.gitignore`)
 - [ ] Decide on those untracked files (commit or `.gitignore`)
-- [ ] Tests pass before merging
+- [x] Tests pass before merging

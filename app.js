@@ -2885,7 +2885,9 @@
   }
 
   function drawableObjects() {
-    const layerFor = (object) => object.category === "door" ? 2 : object.category === "window" ? 1 : 0;
+    // garden decor (canopies, ponds, mounds) sits under furniture; doors stay on top
+    const layerFor = (object) => object.category === "door" ? 2 : object.category === "window" ? 1
+      : DECOR_CATEGORIES.has(object.category) ? -1 : 0;
     return [...state.doc.objects].sort((a, b) => {
       const layerDifference = layerFor(a) - layerFor(b);
       if (layerDifference) return layerDifference;
@@ -2910,9 +2912,7 @@
   function drawObjects(context, size, layers) {
     const real = useRealScale(layers);
     const realDoors = new Map((state.realWallGeometry?.doors || []).map((item) => [item.door, item.opening]));
-    const decorFirst = [...drawableObjects()].sort((a, b) =>
-      Number(!DECOR_CATEGORIES.has(a.category)) - Number(!DECOR_CATEGORIES.has(b.category)));
-    for (const object of decorFirst) {
+    for (const object of drawableObjects()) {
       if (object.category === "door" && !layers.doors) continue;
       if (object.category !== "door" && !layers.objects) continue;
       if (real && object.category === "window") continue; // drawn as part of the thin wall
