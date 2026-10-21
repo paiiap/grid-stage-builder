@@ -85,6 +85,8 @@
           <label class="checkline"><input id="layerPathInput" data-layer="path" type="checkbox" checked> Path</label>
           <label class="checkline"><input id="layerMarkersInput" data-layer="markers" type="checkbox" checked> Markers</label>
           <label class="checkline"><input id="layerGridInput" data-layer="grid" type="checkbox" checked> Grid</label>
+          <label class="checkline"><input id="layerRealScaleInput" data-layer="realScale" type="checkbox" checked> Real scale</label>
+          <label class="checkline"><input id="layerDecorInput" data-layer="decor" type="checkbox" checked> Garden decor</label>
         </div>
       </section>
     </nav>
@@ -219,9 +221,27 @@
             <select id="selectedDoorTypeInput">
               <option value="hinged">Hinged</option>
               <option value="sliding">Sliding</option>
+              <option value="folding">Folding</option>
+            </select>
+          </label>
+          <label>Width cm <input id="selectedDoorWidthCmInput" type="number" min="0" max="600" step="5" placeholder="tiles"></label>
+        </div>
+        <div class="field-row selected-window-fields" hidden>
+          <label>Sill cm <input id="selectedWindowSillCmInput" type="number" min="0" max="240" step="5" placeholder="90"></label>
+          <label>Head cm <input id="selectedWindowHeadCmInput" type="number" min="0" max="240" step="5" placeholder="210"></label>
+        </div>
+        <div class="field-row selected-real-size-fields">
+          <label>Real W cm <input id="selectedRealWidthCmInput" type="number" min="0" max="2000" step="5"></label>
+          <label>Real D cm <input id="selectedRealDepthCmInput" type="number" min="0" max="2000" step="5"></label>
+          <label>Height cm <input id="selectedRealHeightCmInput" type="number" min="0" max="2000" step="5"></label>
+          <label>Align
+            <select id="selectedRealAlignInput">
+              <option value="center">Center</option>
+              <option value="back">Back to wall</option>
             </select>
           </label>
         </div>
+        <div id="selectedRealSizeSummary" class="summary"></div>
         <label class="checkline"><input id="selectedObjectBlockingInput" type="checkbox"> Blocking</label>
         <label class="checkline"><input id="selectedObjectOverlapInput" type="checkbox"> Allow overlap</label>
       </section>
@@ -338,7 +358,8 @@
   <input id="mapBundleInput" type="file" accept="application/json,.json" multiple hidden>
   <script src="assets/walls/pastel-wall-autotile.js?v=20260727-house"></script>
   <script src="wall-model.js?v=20260727-house"></script>
-  <script src="core.js?v=20260727-house"></script>
-  <script src="app.js?v=20260727-house"></script>
+  <script src="real-scale.js?v=20261021-scale"></script>
+  <script src="core.js?v=20261021-scale"></script>
+  <script src="app.js?v=20261021-scale"></script>
 </body>
 </html>

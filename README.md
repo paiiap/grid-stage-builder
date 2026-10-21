@@ -33,6 +33,35 @@ No install step is required.
 
 1 tile = 48x48 px in the editor and exports, which maps to roughly **60 cm** in the real world. This scale was picked by checking it against common furniture sizes: a 4x1-tile kitchen counter comes out to 240x60 cm (matching the standard 60 cm counter depth), and a 3x2-tile sofa or tub both land at 180x120 cm, close to real dimensions.
 
+### Real-scale view
+
+The grid stays the gameplay truth (blocking, paths, stages). On top of it the **Real scale** layer
+(SHOW/HIDE panel) draws what the room really looks like, using `real-scale.js`:
+
+- walls are 30 cm bars on the tile centre lines, joined at corners and cut around doors;
+- doors open at their real width with a swing arc of the same radius;
+- furniture is drawn at its real size inside its tile footprint (the dashed outline is the
+  footprint that blocks paths); the selected object shows `W x D x H cm`;
+- a scale bar (1 m / 2 m) sits in the bottom-left corner.
+
+All real-scale data is optional, so older projects load unchanged:
+
+| Field | Where | Meaning |
+| --- | --- | --- |
+| `map.scale` | map | `tile_cm` (60), `wall_thickness_cm` (30), `wall_height_cm` (240), `floor_levels_cm` per terrain |
+| `map.render_hints` | map | free-form hints for renderers, e.g. `garden_scatter` counts for the Blender build |
+| `size_cm: {w, d, h, align}` | object | real size; `w` runs along the front edge (from `facing`), `d` front to back; a missing `w`/`d` fills the footprint; `align` `back` / `front` / `center` |
+| `width_cm` | door | real opening width measured from the hinge side (narrower leaves a wall filler, wider cuts into the next wall tile) |
+| `door_type: "folding"` | door | bi-fold glass doors |
+| `sill_cm`, `head_cm` | window | window height above the floor |
+| `style` | object | renderer hints, e.g. `{color}`, `{curtain_rail}`, `{upper_cabinets}`, `{hood}`, tree `{kind, canopy_cm, leaf_color}`, `{render_as: "wall"}` |
+| `thin_walls[]` | map | partitions off the tile centre lines: `axis`, `at`, `from`, `to` (tile units, fractions allowed), `thickness_cm`, `openings[{from, to, type}]` |
+| `decor_paths[]` | map | landscape lines: `kind` `paved` (with `width_cm`), `stepping_stones` (with `spacing_cm`) or `fence` (with `gates`), `points[{x, y}]` |
+
+Default real sizes per category live in `REAL_SIZES_CM` in `real-scale.js`; edit a placed
+object's real size in **Object Details**. `thin_walls` and `decor_paths` are drawn but not yet
+editable with a tool, and they do not block paths.
+
 ## Main Workflow
 
 1. Open the editor in a browser.
