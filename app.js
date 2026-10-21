@@ -3,6 +3,7 @@
 
   const core = window.HouseMapCore;
   const wallModel = window.GridWallModel;
+  const realScale = window.GridRealScale;
   const STORAGE_KEY = "gridStageBuilder.project.v1";
   const THEME_STORAGE_KEY = "gridStageBuilder.theme";
   const THEME_CHOICES = new Set(["classic", "dark", "sweet"]);
@@ -206,8 +207,24 @@
     wood_door_panel: "Wood Door Panel",
     bedside_table_lamp: "Bedside Table Lamp",
     open_door_bottom: "Open Door Bottom",
-    blue_armchair: "Blue Armchair"
+    blue_armchair: "Blue Armchair",
+    low_shelf: "Low Shelf",
+    clothes_rail: "Clothes Rail",
+    shoe_cabinet: "Shoe Cabinet",
+    tree: "Tree",
+    boulder: "Boulder",
+    pond: "Pond",
+    mound: "Mound",
+    flower_bed: "Flower Bed",
+    rock_garden: "Rock Garden",
+    birdbath: "Birdbath",
+    stone_lantern: "Stone Lantern",
+    garden_bench: "Garden Bench",
+    garden_seating: "Garden Seating",
+    canopy_swing: "Canopy Swing"
   };
+  // Garden / landscape categories drawn by the decor layer (shapes rather than boxes).
+  const DECOR_CATEGORIES = new Set(["tree", "boulder", "pond", "mound", "flower_bed", "rock_garden", "bush"]);
   const objectCategoryDefaults = {
     sofa: { width: 3, height: 2, facing: "south" },
     coffee_table: { width: 2, height: 1, facing: "south" },
@@ -286,7 +303,21 @@
     wood_door_panel: { width: 1, height: 2, facing: "south" },
     bedside_table_lamp: { width: 2, height: 2, facing: "south" },
     open_door_bottom: { width: 1, height: 2, facing: "south" },
-    blue_armchair: { width: 2, height: 2, facing: "south" }
+    blue_armchair: { width: 2, height: 2, facing: "south" },
+    low_shelf: { width: 4, height: 1, facing: "south" },
+    clothes_rail: { width: 3, height: 1, facing: "south" },
+    shoe_cabinet: { width: 3, height: 1, facing: "south" },
+    tree: { width: 8, height: 8, facing: "south", blocking: false, allow_overlap: true },
+    boulder: { width: 2, height: 2, facing: "south" },
+    pond: { width: 9, height: 5, facing: "west" },
+    mound: { width: 8, height: 8, facing: "south", blocking: false, allow_overlap: true },
+    flower_bed: { width: 8, height: 4, facing: "south", blocking: false },
+    rock_garden: { width: 11, height: 8, facing: "south" },
+    birdbath: { width: 1, height: 1, facing: "south" },
+    stone_lantern: { width: 1, height: 1, facing: "south" },
+    garden_bench: { width: 2, height: 1, facing: "south" },
+    garden_seating: { width: 3, height: 4, facing: "west" },
+    canopy_swing: { width: 3, height: 4, facing: "west" }
   };
   const DEFAULT_ROOM_DEFINITIONS = Object.values(ROOM_TYPE_PRESETS).map((room) => Object.assign({}, room));
   const DEFAULT_OBJECT_DEFINITIONS = [
@@ -368,6 +399,22 @@
     { room_id: "garden", id: "small_fountain", name: "Small Fountain" },
     { room_id: "garden", id: "stepping_stone", name: "Stepping Stone" },
     { room_id: "garden", id: "low_fence", name: "Low Fence" },
+    { room_id: "garden", id: "tree", name: "Tree" },
+    { room_id: "garden", id: "boulder", name: "Boulder" },
+    { room_id: "garden", id: "pond", name: "Pond" },
+    { room_id: "garden", id: "mound", name: "Mound" },
+    { room_id: "garden", id: "flower_bed", name: "Flower Bed" },
+    { room_id: "garden", id: "rock_garden", name: "Rock Garden" },
+    { room_id: "garden", id: "birdbath", name: "Birdbath" },
+    { room_id: "garden", id: "stone_lantern", name: "Stone Lantern" },
+    { room_id: "garden", id: "garden_bench", name: "Garden Bench" },
+    { room_id: "garden", id: "canopy_swing", name: "Canopy Swing" },
+    { room_id: "garden", id: "garden_seating", name: "Garden Seating" },
+    { room_id: "living_room", id: "low_shelf", name: "Low Shelf" },
+    { room_id: "dining_room", id: "low_shelf", name: "Low Shelf" },
+    { room_id: "bedroom", id: "low_shelf", name: "Low Shelf" },
+    { room_id: "bedroom", id: "clothes_rail", name: "Clothes Rail" },
+    { room_id: "balcony", id: "shoe_cabinet", name: "Shoe Cabinet" },
     { room_id: "balcony", id: "balcony_chair", name: "Balcony Chair" },
     { room_id: "balcony", id: "small_table", name: "Small Table" },
     { room_id: "balcony", id: "potted_plant", name: "Potted Plant" },
@@ -425,6 +472,16 @@
     selectedObjectSizeFields: document.querySelector(".selected-object-size-fields"),
     selectedDoorFields: document.querySelector(".selected-door-fields"),
     selectedDoorType: document.getElementById("selectedDoorTypeInput"),
+    selectedDoorWidthCm: document.getElementById("selectedDoorWidthCmInput"),
+    selectedWindowFields: document.querySelector(".selected-window-fields"),
+    selectedWindowSillCm: document.getElementById("selectedWindowSillCmInput"),
+    selectedWindowHeadCm: document.getElementById("selectedWindowHeadCmInput"),
+    selectedRealSizeFields: document.querySelector(".selected-real-size-fields"),
+    selectedRealWidthCm: document.getElementById("selectedRealWidthCmInput"),
+    selectedRealDepthCm: document.getElementById("selectedRealDepthCmInput"),
+    selectedRealHeightCm: document.getElementById("selectedRealHeightCmInput"),
+    selectedRealAlign: document.getElementById("selectedRealAlignInput"),
+    selectedRealSizeSummary: document.getElementById("selectedRealSizeSummary"),
     markerType: document.getElementById("markerTypeInput"),
     stageList: document.getElementById("stageList"),
     addStage: document.getElementById("addStageBtn"),
@@ -517,7 +574,9 @@
       doors: true,
       path: true,
       markers: true,
-      grid: true
+      grid: true,
+      realScale: true,
+      decor: true
     },
     activeStageId: null,
     activePathId: null,
@@ -661,6 +720,8 @@
       objects: clone(state.doc.objects || []),
       object_definitions: clone(state.doc.object_definitions || []),
       wall_segments: clone(state.doc.wall_segments || []),
+      thin_walls: clone(state.doc.thin_walls || []),
+      decor_paths: clone(state.doc.decor_paths || []),
       paths: clone(state.doc.paths || []),
       markers: clone(state.doc.markers || []),
       stages: clone(state.doc.stages || [])
@@ -679,6 +740,8 @@
     state.doc.objects = clone(snapshot.objects || []);
     state.doc.object_definitions = clone(snapshot.object_definitions || DEFAULT_OBJECT_DEFINITIONS);
     state.doc.wall_segments = clone(snapshot.wall_segments || []);
+    state.doc.thin_walls = clone(snapshot.thin_walls || []);
+    state.doc.decor_paths = clone(snapshot.decor_paths || []);
     state.doc.paths = clone(snapshot.paths || []);
     state.doc.markers = clone(snapshot.markers || []);
     state.doc.stages = clone(snapshot.stages || []);
@@ -746,6 +809,8 @@
       objects: [],
       object_definitions: clone(doc.object_definitions || DEFAULT_OBJECT_DEFINITIONS),
       wall_segments: [],
+      thin_walls: [],
+      decor_paths: [],
       paths: [],
       markers: [],
       stages: []
@@ -1997,7 +2062,72 @@
     elements.selectedObjectBlocking.checked = Boolean(object.blocking);
     elements.selectedObjectOverlap.checked = Boolean(object.allow_overlap);
     elements.selectedDoorType.value = object.door_type || "hinged";
+    syncRealSizeFields(object);
     syncingSelectedObjectFields = false;
+  }
+
+  function cmValue(input) {
+    const raw = String(input.value || "").trim();
+    if (!raw) return null;
+    const value = Number(raw);
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : null;
+  }
+
+  function syncRealSizeFields(object) {
+    const isDoor = object.category === "door";
+    const isWindow = object.category === "window";
+    elements.selectedWindowFields.hidden = !isWindow;
+    elements.selectedRealSizeFields.hidden = isDoor || isWindow;
+    elements.selectedDoorWidthCm.value = object.width_cm || "";
+    elements.selectedWindowSillCm.value = object.sill_cm || "";
+    elements.selectedWindowHeadCm.value = object.head_cm || "";
+    const real = realScale ? realScale.realSizeCm(object) : null;
+    const own = object.size_cm || {};
+    elements.selectedRealWidthCm.value = own.w || "";
+    elements.selectedRealDepthCm.value = own.d || "";
+    elements.selectedRealHeightCm.value = own.h || "";
+    elements.selectedRealWidthCm.placeholder = real?.w || "";
+    elements.selectedRealDepthCm.placeholder = real?.d || "";
+    elements.selectedRealHeightCm.placeholder = real?.h || "";
+    elements.selectedRealAlign.value = real?.align || "center";
+    const tileCm = realScale ? realScale.scaleOf(state.doc).tile_cm : 60;
+    const foot = core.rotatedSize(object);
+    elements.selectedRealSizeSummary.textContent = isDoor
+      ? `Opening ${object.width_cm || Math.max(foot.width, foot.height) * tileCm} cm`
+      : `Footprint ${foot.width * tileCm} x ${foot.height * tileCm} cm | real ${realSizeText(object)}`;
+  }
+
+  function updateRealSizeFromFields() {
+    if (syncingSelectedObjectFields) return;
+    const object = selectedObject();
+    if (!object) return;
+    pushHistory();
+    if (object.category === "door") {
+      const width = cmValue(elements.selectedDoorWidthCm);
+      if (width) object.width_cm = width;
+      else delete object.width_cm;
+    } else if (object.category === "window") {
+      const sill = cmValue(elements.selectedWindowSillCm);
+      const head = cmValue(elements.selectedWindowHeadCm);
+      if (sill) object.sill_cm = sill;
+      else delete object.sill_cm;
+      if (head) object.head_cm = head;
+      else delete object.head_cm;
+    } else {
+      const size = {
+        w: cmValue(elements.selectedRealWidthCm),
+        d: cmValue(elements.selectedRealDepthCm),
+        h: cmValue(elements.selectedRealHeightCm)
+      };
+      const preset = realScale?.REAL_SIZES_CM[object.category];
+      const align = elements.selectedRealAlign.value;
+      const next = {};
+      for (const key of ["w", "d", "h"]) if (size[key]) next[key] = size[key];
+      if (align && align !== (preset?.align || "center")) next.align = align;
+      if (Object.keys(next).length) object.size_cm = next;
+      else delete object.size_cm;
+    }
+    afterChange(true);
   }
 
   const FACING_ORDER = ["north", "east", "south", "west"];
@@ -2755,7 +2885,9 @@
   }
 
   function drawableObjects() {
-    const layerFor = (object) => object.category === "door" ? 2 : object.category === "window" ? 1 : 0;
+    // garden decor (canopies, ponds, mounds) sits under furniture; doors stay on top
+    const layerFor = (object) => object.category === "door" ? 2 : object.category === "window" ? 1
+      : DECOR_CATEGORIES.has(object.category) ? -1 : 0;
     return [...state.doc.objects].sort((a, b) => {
       const layerDifference = layerFor(a) - layerFor(b);
       if (layerDifference) return layerDifference;
@@ -2778,10 +2910,37 @@
   }
 
   function drawObjects(context, size, layers) {
+    const real = useRealScale(layers);
+    const realDoors = new Map((state.realWallGeometry?.doors || []).map((item) => [item.door, item.opening]));
     for (const object of drawableObjects()) {
       if (object.category === "door" && !layers.doors) continue;
       if (object.category !== "door" && !layers.objects) continue;
-      const rect = objectRect(object, size);
+      if (real && object.category === "window") continue; // drawn as part of the thin wall
+      if (real && object.category === "door") {
+        const opening = realDoors.get(object) || realScale.doorOpening(state.doc, object);
+        drawRealDoor(context, object, opening, size);
+        continue;
+      }
+      if (DECOR_CATEGORIES.has(object.category)) {
+        if (layers.decor === false) continue;
+        const decorRect = real ? (realObjectRect(object, size) || objectRect(object, size)) : objectRect(object, size);
+        drawDecorObject(context, object, decorRect, size);
+        if (layers.objectLabels) drawObjectLabel(context, object, decorRect, size);
+        continue;
+      }
+      let rect = objectRect(object, size);
+      if (real) {
+        const realRect = realObjectRect(object, size);
+        if (realRect) {
+          context.save();
+          context.strokeStyle = "rgba(47, 41, 36, 0.35)";
+          context.lineWidth = 1;
+          context.setLineDash([4, 4]);
+          context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+          context.restore();
+          rect = realRect;
+        }
+      }
       const drewSprite = object.category !== "door" && object.category !== "window" && drawObjectSprite(context, object, rect);
       if (drewSprite) {
         // Image sprites replace the legacy symbolic object drawing when available.
@@ -3210,6 +3369,283 @@
     context.restore();
   }
 
+  // ---- real-scale rendering (thin walls, real door widths, real furniture sizes) ----
+
+  function useRealScale(layers) {
+    return Boolean(realScale && layers.realScale !== false);
+  }
+
+  function fillTileRect(context, rect, size) {
+    context.fillRect(rect.x * size, rect.y * size, rect.width * size, rect.height * size);
+  }
+
+  function drawRealWalls(context, size, geometry) {
+    context.save();
+    context.fillStyle = "#5c5048";
+    for (const rect of geometry.walls) fillTileRect(context, rect, size);
+    for (const rect of geometry.thinWalls) fillTileRect(context, rect, size);
+    for (const { rect, axis } of geometry.windows) {
+      context.fillStyle = "#efe9de";
+      fillTileRect(context, rect, size);
+      context.fillStyle = "#7fb7cf";
+      const glass = axis === "x"
+        ? { x: rect.x, y: rect.y + rect.height / 2 - 0.03, width: rect.width, height: 0.06 }
+        : { x: rect.x + rect.width / 2 - 0.03, y: rect.y, width: 0.06, height: rect.height };
+      fillTileRect(context, glass, size);
+    }
+    context.strokeStyle = "rgba(47, 41, 36, 0.55)";
+    context.lineWidth = Math.max(1, size * 0.02);
+    for (const { rect } of geometry.windows) {
+      context.strokeRect(rect.x * size, rect.y * size, rect.width * size, rect.height * size);
+    }
+    for (const { rect, opening } of geometry.thinOpenings) { // sliding panels in a partition
+      context.fillStyle = "rgba(201, 164, 118, 0.85)";
+      const vertical = rect.height > rect.width;
+      const half = vertical ? rect.height / 2 : rect.width / 2;
+      const panel = vertical
+        ? { x: rect.x + rect.width, y: rect.y, width: rect.width * 0.45, height: half + 0.08 }
+        : { x: rect.x, y: rect.y + rect.height, width: half + 0.08, height: rect.height * 0.45 };
+      fillTileRect(context, panel, size);
+      if (opening.type !== "sliding") continue;
+      const second = vertical
+        ? { x: rect.x + rect.width * 1.5, y: rect.y + 0.2, width: rect.width * 0.45, height: half + 0.08 }
+        : { x: rect.x + 0.2, y: rect.y + rect.height * 1.5, width: half + 0.08, height: rect.height * 0.45 };
+      fillTileRect(context, second, size);
+    }
+    context.restore();
+  }
+
+  function drawRealDoor(context, door, opening, size) {
+    const plan = realScale.doorLeaves(state.doc, door, opening);
+    const [sx, sy] = plan.swingSide;
+    context.save();
+    context.strokeStyle = "#2f2924";
+    context.lineWidth = Math.max(1.25, size * 0.03);
+    if (door.door_type === "folding" || door.door_type === "sliding") {
+      // panels stacked at both jambs, drawn as a zig-zag on the swing side
+      const [ax, ay] = opening.axis === "x" ? [1, 0] : [0, 1];
+      const length = opening.a1 - opening.a0;
+      const panels = Math.max(2, Math.round(length * realScale.scaleOf(state.doc).tile_cm / 60));
+      const pw = length / panels;
+      context.strokeStyle = "#3b3d40";
+      context.lineWidth = Math.max(2, size * 0.05);
+      for (const [origin, dir, count] of [[plan.start, 1, Math.floor(panels / 2)], [plan.end, -1, panels - Math.floor(panels / 2)]]) {
+        context.beginPath();
+        let px = origin[0];
+        let py = origin[1];
+        context.moveTo(px * size, py * size);
+        for (let i = 0; i < count; i += 1) {
+          px += ax * dir * pw * 0.3;
+          py += ay * dir * pw * 0.3;
+          const out = i % 2 === 0 ? pw * 0.95 : 0;
+          context.lineTo((px + sx * out) * size, (py + sy * out) * size);
+        }
+        context.stroke();
+      }
+      context.restore();
+      return;
+    }
+    for (const leaf of plan.leaves) {
+      const [hx, hy] = leaf.hinge;
+      const end = [hx + sx * leaf.length, hy + sy * leaf.length];
+      const closed = [hx + leaf.along[0] * leaf.length, hy + leaf.along[1] * leaf.length];
+      drawDoorLeafPanel(context, { x: hx * size, y: hy * size }, { x: end[0] * size, y: end[1] * size }, size);
+      const closedAngle = Math.atan2(closed[1] - hy, closed[0] - hx);
+      const openAngle = Math.atan2(sy, sx);
+      drawDoorSwingArc(context, { x: hx * size, y: hy * size }, leaf.length * size, closedAngle, openAngle);
+    }
+    context.restore();
+  }
+
+  function decorPathPoints(path, size) {
+    return (path.points || []).map((point) => ({ x: Number(point.x) * size, y: Number(point.y) * size }));
+  }
+
+  function drawDecorPaths(context, size) {
+    const tileCm = realScale ? realScale.scaleOf(state.doc).tile_cm : 60;
+    for (const path of state.doc.decor_paths || []) {
+      const points = decorPathPoints(path, size);
+      if (points.length < 2) continue;
+      context.save();
+      context.lineJoin = "round";
+      context.lineCap = "round";
+      if (path.kind === "paved") {
+        context.strokeStyle = "#8d7f6c";
+        context.lineWidth = (Number(path.width_cm || 120) + 16) / tileCm * size;
+        context.beginPath();
+        points.forEach((p, i) => (i ? context.lineTo(p.x, p.y) : context.moveTo(p.x, p.y)));
+        context.stroke();
+        context.strokeStyle = "#d2c2a6";
+        context.lineWidth = Number(path.width_cm || 120) / tileCm * size;
+        context.stroke();
+      } else if (path.kind === "stepping_stones") {
+        context.fillStyle = "#b3aca0";
+        const spacing = (Number(path.spacing_cm || 55) / tileCm) * size;
+        for (let i = 0; i < points.length - 1; i += 1) {
+          const a = points[i];
+          const b = points[i + 1];
+          const length = Math.hypot(b.x - a.x, b.y - a.y);
+          const count = Math.max(1, Math.floor(length / spacing));
+          for (let k = 0; k <= count; k += 1) {
+            if (k === count && i < points.length - 2) continue;
+            context.beginPath();
+            context.arc(a.x + (b.x - a.x) * k / count, a.y + (b.y - a.y) * k / count, size * 0.38, 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+      } else if (path.kind === "fence") {
+        context.strokeStyle = "#f4f1e8";
+        context.lineWidth = Math.max(2, size * 0.12);
+        const gates = path.gates || [];
+        for (let i = 0; i < points.length - 1; i += 1) {
+          context.beginPath();
+          context.moveTo(points[i].x, points[i].y);
+          context.lineTo(points[i + 1].x, points[i + 1].y);
+          context.stroke();
+        }
+        context.fillStyle = "#c9b49a";
+        for (const gate of gates) {
+          for (const side of [-1, 1]) {
+            const gx = (Number(gate.x) + (gate.axis === "y" ? 0 : side * Number(gate.width_tiles || 1.4) / 2)) * size;
+            const gy = (Number(gate.y) + (gate.axis === "y" ? side * Number(gate.width_tiles || 1.4) / 2 : 0)) * size;
+            context.fillRect(gx - size * 0.27, gy - size * 0.27, size * 0.54, size * 0.54);
+          }
+        }
+      }
+      context.restore();
+    }
+  }
+
+  function drawDecorObject(context, object, rect, size) {
+    const cx = rect.x + rect.width / 2;
+    const cy = rect.y + rect.height / 2;
+    const style = object.style || {};
+    context.save();
+    context.lineWidth = Math.max(1.5, size * 0.04);
+    if (object.category === "tree") {
+      const canopy = Number(style.canopy_cm || 0) / realScale.scaleOf(state.doc).tile_cm * size / 2 || Math.min(rect.width, rect.height) / 2;
+      context.fillStyle = style.leaf_color ? `${style.leaf_color}cc` : "rgba(79, 143, 74, 0.8)";
+      context.strokeStyle = "rgba(38, 74, 36, 0.9)";
+      context.beginPath();
+      context.arc(cx, cy, canopy, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+      context.fillStyle = "#5b4434";
+      context.beginPath();
+      context.arc(cx, cy, Math.max(3, size * 0.3), 0, Math.PI * 2);
+      context.fill();
+    } else if (object.category === "pond") {
+      context.fillStyle = "rgba(61, 143, 176, 0.85)";
+      context.strokeStyle = "#7d7870";
+      context.lineWidth = Math.max(3, size * 0.2);
+      context.beginPath();
+      context.ellipse(cx, cy, rect.width / 2, rect.height / 2, 0, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+    } else if (object.category === "mound") {
+      const radius = style.radius_cm ? Number(style.radius_cm) / realScale.scaleOf(state.doc).tile_cm * size : null;
+      context.strokeStyle = "rgba(60, 100, 50, 0.45)";
+      context.setLineDash([6, 5]);
+      for (const k of [1, 0.66, 0.33]) {
+        context.beginPath();
+        context.ellipse(cx, cy, (radius || rect.width / 2) * k, (radius || rect.height / 2) * k, 0, 0, Math.PI * 2);
+        context.stroke();
+      }
+    } else if (object.category === "flower_bed") {
+      context.fillStyle = "#4a3426";
+      context.beginPath();
+      context.ellipse(cx, cy, rect.width / 2, rect.height / 2, 0, 0, Math.PI * 2);
+      context.fill();
+      const colors_ = ["#f2c14e", "#e86f8a", "#ffffff", "#b07cc6", "#ff9a5a"];
+      for (let i = 0; i < 40; i += 1) {
+        const a = (i * 2.399) % (Math.PI * 2);
+        const r = Math.sqrt((i + 0.5) / 40) * 0.85;
+        context.fillStyle = colors_[i % colors_.length];
+        context.beginPath();
+        context.arc(cx + Math.cos(a) * r * rect.width / 2, cy + Math.sin(a) * r * rect.height / 2, Math.max(2, size * 0.1), 0, Math.PI * 2);
+        context.fill();
+      }
+    } else if (object.category === "rock_garden") {
+      context.fillStyle = "#e3dfd5";
+      context.strokeStyle = "#5a3a24";
+      context.fillRect(rect.x, rect.y, rect.width, rect.height);
+      context.strokeRect(rect.x, rect.y, rect.width, rect.height);
+      context.strokeStyle = "rgba(150, 140, 125, 0.6)";
+      context.lineWidth = 1;
+      for (let y = rect.y + size * 0.25; y < rect.y + rect.height; y += size * 0.25) {
+        context.beginPath();
+        context.moveTo(rect.x, y);
+        context.lineTo(rect.x + rect.width, y);
+        context.stroke();
+      }
+    } else { // boulder, bush
+      context.fillStyle = object.category === "bush" ? "#4f8f4a" : "#8f8a82";
+      context.strokeStyle = "rgba(47, 41, 36, 0.6)";
+      context.beginPath();
+      context.ellipse(cx, cy, rect.width / 2, rect.height / 2, 0, 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+    }
+    context.restore();
+  }
+
+  function realObjectRect(object, size) {
+    const rect = realScale.realRect(state.doc, object);
+    if (!rect.real) return null;
+    return { x: rect.x * size, y: rect.y * size, width: rect.width * size, height: rect.height * size };
+  }
+
+  function drawScaleBar(context, size) {
+    if (!realScale) return;
+    const tileCm = realScale.scaleOf(state.doc).tile_cm;
+    const metre = 100 / tileCm * size;
+    const x = size * 0.6;
+    const y = state.doc.map.height * size - size * 0.6;
+    context.save();
+    context.fillStyle = "rgba(255, 250, 240, 0.85)";
+    context.fillRect(x - 6, y - size * 0.55, metre * 2 + 12, size * 0.75);
+    context.fillStyle = "#2f2924";
+    context.fillRect(x, y - 4, metre, 8);
+    context.strokeStyle = "#2f2924";
+    context.lineWidth = 2;
+    context.strokeRect(x + metre, y - 4, metre, 8);
+    context.font = `800 ${Math.max(11, size * 0.26)}px sans-serif`;
+    context.textAlign = "left";
+    context.textBaseline = "bottom";
+    context.fillText(`0   1 m   2 m   (1 tile = ${tileCm} cm)`, x, y - 6);
+    context.restore();
+  }
+
+  // "W x D x H cm" of the real box (W along the object's front edge).
+  function realSizeText(object) {
+    const tileCm = realScale.scaleOf(state.doc).tile_cm;
+    const rect = realScale.realRect(state.doc, object);
+    const facing = object.facing || "south";
+    const acrossX = facing === "north" || facing === "south";
+    const w = Math.round((acrossX ? rect.width : rect.height) * tileCm);
+    const d = Math.round((acrossX ? rect.height : rect.width) * tileCm);
+    const h = realScale.realSizeCm(object)?.h;
+    return `${w} x ${d}${h ? ` x ${h}` : ""} cm`;
+  }
+
+  function drawRealSizeLabel(context, size) {
+    const object = selectedObject();
+    if (!object || !realScale) return;
+    if (object.category === "door" || object.category === "window") return;
+    const rect = selectionRect(object, size);
+    const label = realSizeText(object);
+    context.save();
+    context.font = `800 ${Math.max(11, size * 0.26)}px sans-serif`;
+    const width = context.measureText(label).width + 12;
+    context.fillStyle = "rgba(31, 111, 159, 0.92)";
+    context.fillRect(rect.x, rect.y + rect.height + 8, width, size * 0.45);
+    context.fillStyle = "#ffffff";
+    context.textAlign = "left";
+    context.textBaseline = "middle";
+    context.fillText(label, rect.x + 6, rect.y + rect.height + 8 + size * 0.225);
+    context.restore();
+  }
+
   function drawDocument(context, size, options) {
     const layers = Object.assign({}, state.layers, options?.layers || {});
     const editorOverlays = options?.editorOverlays !== false;
@@ -3220,7 +3656,12 @@
     context.fillStyle = colors.terrain.void;
     context.fillRect(0, 0, state.doc.map.width * size, state.doc.map.height * size);
     for (const tile of state.doc.tiles) drawTile(context, tile, size, layers);
-    if (layers.structure) {
+    const real = useRealScale(layers);
+    if (layers.decor !== false) drawDecorPaths(context, size);
+    if (layers.structure && real) {
+      state.realWallGeometry = realScale.wallGeometry(state.doc);
+      drawRealWalls(context, size, state.realWallGeometry);
+    } else if (layers.structure) {
       const hiddenWallCells = doorHiddenWallCellKeys(state.doc);
       for (const tile of wallLookup.wallTiles) {
         if (hiddenWallCells.has(`${tile.x},${tile.y}`)) continue;
@@ -3238,7 +3679,9 @@
       drawWallSegmentControls(context, size);
       drawSelection(context, size);
       if (layers.objects || layers.doors) drawObjectControls(context, size);
+      if (real) drawRealSizeLabel(context, size);
       drawDragPreview(context, size);
+      if (real) drawScaleBar(context, size);
     }
   }
 
@@ -3486,6 +3929,8 @@
       objects: Array.isArray(source.objects) ? source.objects : [],
       object_definitions: Array.isArray(source.object_definitions) ? source.object_definitions : clone(DEFAULT_OBJECT_DEFINITIONS),
       wall_segments: Array.isArray(source.wall_segments) ? source.wall_segments : undefined,
+      thin_walls: Array.isArray(source.thin_walls) ? source.thin_walls : [],
+      decor_paths: Array.isArray(source.decor_paths) ? source.decor_paths : [],
       paths: Array.isArray(source.paths) ? source.paths : [],
       markers: Array.isArray(source.markers) ? source.markers : [],
       stages: Array.isArray(source.stages) ? source.stages : []
@@ -3693,6 +4138,11 @@
     ].forEach((input) => {
       input.addEventListener("change", updateSelectedObjectFromFields);
     });
+    [
+      elements.selectedDoorWidthCm, elements.selectedWindowSillCm, elements.selectedWindowHeadCm,
+      elements.selectedRealWidthCm, elements.selectedRealDepthCm, elements.selectedRealHeightCm,
+      elements.selectedRealAlign
+    ].forEach((input) => input.addEventListener("change", updateRealSizeFromFields));
   }
 
   function stagePngLayers(kind) {

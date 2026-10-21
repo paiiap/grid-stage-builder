@@ -162,6 +162,8 @@
       markers: [],
       stages: [],
       wall_segments: [],
+      thin_walls: [],
+      decor_paths: [],
       maps: [{
         id: map.id,
         name: map.name,
@@ -174,7 +176,9 @@
         paths: [],
         markers: [],
         stages: [],
-        wall_segments: []
+        wall_segments: [],
+        thin_walls: [],
+        decor_paths: []
       }]
     };
   }
