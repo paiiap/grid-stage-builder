@@ -48,6 +48,7 @@
           <button class="tool" data-mode-tool="map" data-tool="room" title="R - Rooms" type="button"><kbd>R</kbd><span>Rooms</span></button>
           <button class="tool" data-mode-tool="map" data-tool="rect" title="Q - Room box" type="button"><kbd>Q</kbd><span>Room box</span></button>
           <button class="tool" data-mode-tool="map" data-tool="object" title="O - Place home object" type="button"><kbd>O</kbd><span>Objects</span></button>
+          <button class="tool" data-mode-tool="map" data-tool="lines" title="L - Partitions, paths and fences" type="button"><kbd>L</kbd><span>Lines</span></button>
         </div>
       </div>
 
@@ -157,6 +158,25 @@
         <div class="field-row">
           <button id="addRoomBtn" class="choice-btn" type="button">+ Room</button>
           <button id="deleteRoomBtn" class="choice-btn" type="button">Delete</button>
+        </div>
+      </section>
+
+      <section class="panel" data-mode-panel="map" data-panel="lines">
+        <h2>Lines</h2>
+        <div class="paint-group" role="group" aria-label="Line kind">
+          <div class="paint-title">Kind</div>
+          <button class="choice-btn active" data-line-kind="partition" type="button">Partition wall</button>
+          <button class="choice-btn" data-line-kind="paved" type="button">Paved path</button>
+          <button class="choice-btn" data-line-kind="stepping_stones" type="button">Stepping stones</button>
+          <button class="choice-btn" data-line-kind="fence" type="button">Fence</button>
+        </div>
+        <label>Width / thickness cm <input id="lineWidthCmInput" type="number" min="5" max="600" step="5" value="10"></label>
+        <div id="lineHint" class="summary">Partition: drag along a wall line. Points snap to 15 cm.</div>
+        <div id="lineSelectionSummary" class="summary">No line selected</div>
+        <div class="field-row">
+          <button id="lineAddOpeningBtn" class="choice-btn" type="button" disabled>+ Sliding door</button>
+          <button id="lineAddGateBtn" class="choice-btn" type="button" disabled>+ Gate</button>
+          <button id="lineDeleteBtn" class="choice-btn" type="button" disabled>Delete line</button>
         </div>
       </section>
 
@@ -360,6 +380,6 @@
   <script src="wall-model.js?v=20260727-house"></script>
   <script src="real-scale.js?v=20261021-scale"></script>
   <script src="core.js?v=20261021-scale"></script>
-  <script src="app.js?v=20261021-scale"></script>
+  <script src="app.js?v=20261022-lines"></script>
 </body>
 </html>

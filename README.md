@@ -59,8 +59,14 @@ All real-scale data is optional, so older projects load unchanged:
 | `decor_paths[]` | map | landscape lines: `kind` `paved` (with `width_cm`), `stepping_stones` (with `spacing_cm`) or `fence` (with `gates`), `points[{x, y}]` |
 
 Default real sizes per category live in `REAL_SIZES_CM` in `real-scale.js`; edit a placed
-object's real size in **Object Details**. `thin_walls` and `decor_paths` are drawn but not yet
-editable with a tool, and they do not block paths.
+object's real size in **Object Details**.
+
+The **Lines** tool (`L`) draws `thin_walls` and `decor_paths` with points snapped to 15 cm:
+drag a partition wall (locks to horizontal or vertical), or click points for a paved path,
+stepping stones or a fence and finish with double-click or Enter (Esc cancels). Click a line to
+select it; the panel can add a sliding door to a partition, a gate to a fence, change the
+width / thickness, or delete it. Hold Shift to start a new line on top of an existing one.
+Lines do not block paths.
 
 ## Main Workflow
 

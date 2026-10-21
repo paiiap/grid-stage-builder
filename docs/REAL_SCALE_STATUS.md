@@ -29,8 +29,9 @@ what renderers (e.g. the Pawtectors Blender build) can read. Field reference: `R
 
 - [x] `npm test`: 146 / 146 pass (ran with the Node.js bundled with Adobe Creative Cloud, v24.19.0)
 - [x] Tests for `real-scale.js` (`tests/real-scale.test.js`)
-- [ ] Tool to draw / edit `thin_walls`
-- [ ] Tool to draw / edit `decor_paths`
+- [x] Tool to draw / edit `thin_walls` (Lines tool: partitions + sliding doors)
+- [x] Tool to draw / edit `decor_paths` (Lines tool: paved, stepping stones, fence + gates)
+- [ ] Lines tool: move / reshape points of an existing line (now: delete and redraw)
 - [ ] Decide whether `thin_walls` should block paths (edge blocking is not modelled; tiles only)
 - [ ] Fold this into `docs/map-builder-status.md`
 

@@ -108,9 +108,10 @@
     m: "marker",
     f: "stage",
     e: "erase",
-    h: "pan"
+    h: "pan",
+    l: "lines"
   };
-  const MAP_MODE_TOOLS = new Set(["select", "tile", "wall", "room", "rect", "object", "erase", "pan"]);
+  const MAP_MODE_TOOLS = new Set(["select", "tile", "wall", "room", "rect", "object", "lines", "erase", "pan"]);
   const STAGE_MODE_TOOLS = new Set(["select", "stage", "path", "path_area", "marker", "erase", "pan"]);
   const TOOL_PANELS = {
     tile: ["tile"],
@@ -121,7 +122,8 @@
     path: ["stage-path"],
     path_area: ["stage-path"],
     marker: ["stage-marker"],
-    stage: ["stage-list"]
+    stage: ["stage-list"],
+    lines: ["lines"]
   };
   const STAGE_RATIO_PRESETS = {
     "9:16": { width: 9, height: 16 },
@@ -482,6 +484,12 @@
     selectedRealHeightCm: document.getElementById("selectedRealHeightCmInput"),
     selectedRealAlign: document.getElementById("selectedRealAlignInput"),
     selectedRealSizeSummary: document.getElementById("selectedRealSizeSummary"),
+    lineWidthCm: document.getElementById("lineWidthCmInput"),
+    lineHint: document.getElementById("lineHint"),
+    lineSelectionSummary: document.getElementById("lineSelectionSummary"),
+    lineAddOpening: document.getElementById("lineAddOpeningBtn"),
+    lineAddGate: document.getElementById("lineAddGateBtn"),
+    lineDelete: document.getElementById("lineDeleteBtn"),
     markerType: document.getElementById("markerTypeInput"),
     stageList: document.getElementById("stageList"),
     addStage: document.getElementById("addStageBtn"),
@@ -600,7 +608,11 @@
     wallAssets: null,
     wallAssetsStatus: "loading",
     wallAssetsWarning: null,
-    panStart: null
+    panStart: null,
+    lineKind: "partition",
+    lineDraft: null,
+    selectedLine: null,
+    lineGatePending: false
   };
 
   function clamp(value, min, max) {
@@ -1705,6 +1717,10 @@
       state.panStart = { x: event.clientX, y: event.clientY, left: elements.scroller.scrollLeft, top: elements.scroller.scrollTop };
       return;
     }
+    if (state.tool === "lines") {
+      lineToolPointerDown(event);
+      return;
+    }
     if (state.tool === "wall") {
       if (state.wallAction === "select") {
         const handle = wallHandleAtPoint(canvasPoint.x, canvasPoint.y);
@@ -1809,6 +1825,10 @@
   function handlePointerMove(event) {
     const point = canvasToTile(event);
     elements.coordStatus.textContent = `x ${point.x}, y ${point.y}`;
+    if (state.tool === "lines") {
+      lineToolPointerMove(event);
+      return;
+    }
     if (!state.isDragging) return;
     state.dragCurrent = point;
     if (state.tool === "pan" && state.panStart) {
@@ -1896,6 +1916,12 @@
 
   function handlePointerUp(event) {
     if (!state.isDragging) return;
+    if (state.tool === "lines") {
+      state.isDragging = false;
+      state.dragStart = null;
+      lineToolPointerUp(event);
+      return;
+    }
     const point = canvasToTile(event);
     if (state.dragStart) {
       if (state.tool === "rect") {
@@ -1930,8 +1956,333 @@
     afterChange(objectDrag?.moved || markerDrag?.moved || pathDrag?.moved || wallResize?.moved || wallDrawCommitted || state.tool === "rect" || state.tool === "stage" || state.tool === "path_area");
   }
 
+  // ---- Lines tool: partition walls (thin_walls) and decor paths (paved, stepping stones, fence) ----
+
+  const LINE_SNAP = 4; // points snap to quarter tiles (15 cm at 60 cm tiles)
+  const LINE_WIDTH_FIELD = { partition: "thickness_cm", paved: "width_cm", stepping_stones: "spacing_cm", fence: "height_cm" };
+  const LINE_DEFAULT_CM = { partition: 10, paved: 120, stepping_stones: 55, fence: 100 };
+  const LINE_HINTS = {
+    partition: "Partition: drag along a line (locks to horizontal or vertical). Click a partition to select it.",
+    paved: "Paved path: click to add points, double-click or Enter to finish, Esc to cancel. Width = path width.",
+    stepping_stones: "Stepping stones: click to add points, double-click or Enter to finish. Width = stone spacing.",
+    fence: "Fence: click to add points, double-click or Enter to finish. Width = fence height. Select it to add a gate."
+  };
+  const LINE_NAMES = { partition: "Partition", paved: "Paved path", stepping_stones: "Stepping stones", fence: "Fence" };
+
+  function canvasToTilePoint(event) {
+    const point = canvasToCanvasPoint(event);
+    return { x: point.x / tileSize(), y: point.y / tileSize() };
+  }
+
+  function snapLinePoint(point) {
+    return {
+      x: clamp(Math.round(point.x * LINE_SNAP) / LINE_SNAP, 0, state.doc.map.width),
+      y: clamp(Math.round(point.y * LINE_SNAP) / LINE_SNAP, 0, state.doc.map.height)
+    };
+  }
+
+  function axisLockedLine(a, b) {
+    return Math.abs(b.x - a.x) >= Math.abs(b.y - a.y) ? { x: b.x, y: a.y } : { x: a.x, y: b.y };
+  }
+
+  function lineEntries() {
+    const entries = [];
+    for (const wall of state.doc.thin_walls || []) {
+      const vertical = wall.axis === "vertical" || wall.axis === "y";
+      const at = Number(wall.at);
+      const a = vertical ? { x: at, y: Number(wall.from) } : { x: Number(wall.from), y: at };
+      const b = vertical ? { x: at, y: Number(wall.to) } : { x: Number(wall.to), y: at };
+      entries.push({ type: "thin_wall", item: wall, segments: [[a, b]] });
+    }
+    for (const path of state.doc.decor_paths || []) {
+      const points = (path.points || []).map((p) => ({ x: Number(p.x), y: Number(p.y) }));
+      entries.push({ type: "decor_path", item: path, segments: points.slice(1).map((p, i) => [points[i], p]) });
+    }
+    return entries;
+  }
+
+  function projectOnSegment(p, a, b) {
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const length = dx * dx + dy * dy;
+    const t = length ? clamp(((p.x - a.x) * dx + (p.y - a.y) * dy) / length, 0, 1) : 0;
+    const q = { x: a.x + dx * t, y: a.y + dy * t };
+    return { point: q, distance: Math.hypot(p.x - q.x, p.y - q.y) };
+  }
+
+  function lineAt(point, tolerance = 0.35) {
+    let best = null;
+    for (const entry of lineEntries()) {
+      for (const [a, b] of entry.segments) {
+        const hit = projectOnSegment(point, a, b);
+        if (hit.distance <= tolerance && (!best || hit.distance < best.distance)) best = { entry, distance: hit.distance, a, b, point: hit.point };
+      }
+    }
+    return best;
+  }
+
+  function selectedLineEntry() {
+    if (!state.selectedLine) return null;
+    return lineEntries().find((entry) => entry.type === state.selectedLine.type && entry.item.id === state.selectedLine.id) || null;
+  }
+
+  function lineKindOf(entry) {
+    return entry.type === "thin_wall" ? "partition" : entry.item.kind;
+  }
+
+  function lineWidthValue(kind) {
+    const value = Number(elements.lineWidthCm.value);
+    return Number.isFinite(value) && value > 0 ? Math.round(value) : LINE_DEFAULT_CM[kind];
+  }
+
+  function setLineKind(kind) {
+    state.lineKind = kind;
+    state.lineDraft = null;
+    state.lineGatePending = false;
+    elements.lineWidthCm.value = LINE_DEFAULT_CM[kind];
+    refreshInspector();
+    render();
+  }
+
+  function usedLineIds() {
+    return new Set([...(state.doc.thin_walls || []), ...(state.doc.decor_paths || [])].map((item) => item.id));
+  }
+
+  function commitPartition(a, b) {
+    const end = axisLockedLine(a, b);
+    const vertical = end.x === a.x && end.y !== a.y;
+    const from = vertical ? Math.min(a.y, end.y) : Math.min(a.x, end.x);
+    const to = vertical ? Math.max(a.y, end.y) : Math.max(a.x, end.x);
+    if (to - from < 0.25) return;
+    const at = vertical ? a.x : a.y;
+    const mid = vertical ? { x: at, y: (from + to) / 2 } : { x: (from + to) / 2, y: at };
+    const tile = core.getTile(state.doc, Math.min(state.doc.map.width - 1, Math.floor(mid.x)), Math.min(state.doc.map.height - 1, Math.floor(mid.y)));
+    pushHistory();
+    state.doc.thin_walls = state.doc.thin_walls || [];
+    const wall = {
+      id: uniqueId("partition", usedLineIds()),
+      name: LINE_NAMES.partition,
+      axis: vertical ? "vertical" : "horizontal",
+      at,
+      from,
+      to,
+      thickness_cm: lineWidthValue("partition"),
+      room_id: tile?.room_id || null,
+      blocking: false,
+      openings: []
+    };
+    state.doc.thin_walls.push(wall);
+    state.selectedLine = { type: "thin_wall", id: wall.id };
+    afterChange(true);
+  }
+
+  function finishLineDraft() {
+    const draft = state.lineDraft;
+    state.lineDraft = null;
+    state.lineHover = null;
+    if (!draft || draft.kind === "partition") {
+      render();
+      return;
+    }
+    const points = draft.points.filter((p, i, all) => i === 0 || p.x !== all[i - 1].x || p.y !== all[i - 1].y);
+    if (points.length < 2) {
+      render();
+      return;
+    }
+    pushHistory();
+    state.doc.decor_paths = state.doc.decor_paths || [];
+    const path = {
+      id: uniqueId(draft.kind, usedLineIds()),
+      name: LINE_NAMES[draft.kind],
+      kind: draft.kind,
+      [LINE_WIDTH_FIELD[draft.kind]]: lineWidthValue(draft.kind),
+      points
+    };
+    if (draft.kind === "fence") path.gates = [];
+    state.doc.decor_paths.push(path);
+    state.selectedLine = { type: "decor_path", id: path.id };
+    afterChange(true);
+  }
+
+  function cancelLineDraft() {
+    state.lineDraft = null;
+    state.lineHover = null;
+    state.lineGatePending = false;
+    refreshInspector();
+    render();
+  }
+
+  function deleteSelectedLine() {
+    const entry = selectedLineEntry();
+    if (!entry) return;
+    pushHistory();
+    const key = entry.type === "thin_wall" ? "thin_walls" : "decor_paths";
+    state.doc[key] = state.doc[key].filter((item) => item !== entry.item);
+    state.selectedLine = null;
+    afterChange(true);
+  }
+
+  function addSlidingDoorToSelected() {
+    const entry = selectedLineEntry();
+    if (!entry || entry.type !== "thin_wall") return;
+    const wall = entry.item;
+    const from = Number(wall.from);
+    const to = Number(wall.to);
+    const width = Math.min(realScale.cmToTiles(state.doc, 160), to - from - 0.2);
+    if (width <= 0.3) return;
+    const mid = (from + to) / 2;
+    pushHistory();
+    wall.openings = wall.openings || [];
+    wall.openings.push({ from: Math.round((mid - width / 2) * 100) / 100, to: Math.round((mid + width / 2) * 100) / 100, type: "sliding" });
+    afterChange(true);
+  }
+
+  function placeGate(point) {
+    const entry = selectedLineEntry();
+    state.lineGatePending = false;
+    if (!entry || entry.item.kind !== "fence") return;
+    const hit = lineAt(point, 1.5);
+    if (!hit || hit.entry.item !== entry.item) {
+      refreshInspector();
+      return;
+    }
+    const horizontal = Math.abs(hit.b.x - hit.a.x) >= Math.abs(hit.b.y - hit.a.y);
+    pushHistory();
+    entry.item.gates = entry.item.gates || [];
+    entry.item.gates.push({
+      x: Math.round(hit.point.x * LINE_SNAP) / LINE_SNAP,
+      y: Math.round(hit.point.y * LINE_SNAP) / LINE_SNAP,
+      axis: horizontal ? "x" : "y",
+      width_tiles: 1.4
+    });
+    afterChange(true);
+  }
+
+  function lineToolPointerDown(event) {
+    const raw = canvasToTilePoint(event);
+    const point = snapLinePoint(raw);
+    if (state.lineGatePending) {
+      placeGate(raw);
+      return;
+    }
+    if (!state.lineDraft && !event.shiftKey) {
+      const hit = lineAt(raw);
+      if (hit) {
+        state.selectedLine = { type: hit.entry.type, id: hit.entry.item.id };
+        refreshInspector();
+        render();
+        return;
+      }
+    }
+    state.selectedLine = null;
+    if (state.lineKind === "partition") {
+      state.lineDraft = { kind: "partition", points: [point, point] };
+    } else if (!state.lineDraft) {
+      state.lineDraft = { kind: state.lineKind, points: [point] };
+    } else {
+      state.lineDraft.points.push(point);
+    }
+    refreshInspector();
+    render();
+  }
+
+  function lineToolPointerMove(event) {
+    const point = snapLinePoint(canvasToTilePoint(event));
+    const draft = state.lineDraft;
+    if (draft && draft.kind === "partition" && event.buttons === 1) {
+      draft.points[1] = axisLockedLine(draft.points[0], point);
+      render();
+    } else if (draft && draft.kind !== "partition") {
+      state.lineHover = point;
+      render();
+    }
+  }
+
+  function lineToolPointerUp() {
+    const draft = state.lineDraft;
+    if (draft && draft.kind === "partition") {
+      state.lineDraft = null;
+      commitPartition(draft.points[0], draft.points[1]);
+      render();
+    }
+  }
+
+  function syncLinePanel() {
+    document.querySelectorAll("[data-line-kind]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.lineKind === state.lineKind);
+    });
+    const entry = selectedLineEntry();
+    elements.lineHint.textContent = state.lineGatePending
+      ? "Click on the selected fence where the gate goes."
+      : LINE_HINTS[state.lineKind];
+    if (entry) {
+      const kind = lineKindOf(entry);
+      const field = LINE_WIDTH_FIELD[kind];
+      const lengthTiles = entry.segments.reduce((sum, [a, b]) => sum + Math.hypot(b.x - a.x, b.y - a.y), 0);
+      const tileCm = realScale.scaleOf(state.doc).tile_cm;
+      const extra = entry.type === "thin_wall"
+        ? ` | ${(entry.item.openings || []).length} door(s)`
+        : kind === "fence" ? ` | ${(entry.item.gates || []).length} gate(s)` : "";
+      elements.lineSelectionSummary.textContent =
+        `${entry.item.name || LINE_NAMES[kind]} (${entry.item.id}) | ${Math.round(lengthTiles * tileCm)} cm long | ${field.replace("_cm", "")} ${entry.item[field] ?? LINE_DEFAULT_CM[kind]} cm${extra}`;
+    } else {
+      elements.lineSelectionSummary.textContent = state.lineDraft ? `Drawing: ${state.lineDraft.points.length} point(s)` : "No line selected";
+    }
+    elements.lineAddOpening.disabled = !entry || entry.type !== "thin_wall";
+    elements.lineAddGate.disabled = !entry || entry.item.kind !== "fence";
+    elements.lineDelete.disabled = !entry;
+  }
+
+  function updateSelectedLineWidth() {
+    const entry = selectedLineEntry();
+    if (!entry) return;
+    const kind = lineKindOf(entry);
+    pushHistory();
+    entry.item[LINE_WIDTH_FIELD[kind]] = lineWidthValue(kind);
+    afterChange(true);
+  }
+
+  function drawLineOverlays(context, size) {
+    const entry = selectedLineEntry();
+    context.save();
+    context.lineCap = "round";
+    if (entry) {
+      context.strokeStyle = colors.selected;
+      context.lineWidth = Math.max(3, size * 0.12);
+      context.setLineDash([10, 6]);
+      for (const [a, b] of entry.segments) {
+        context.beginPath();
+        context.moveTo(a.x * size, a.y * size);
+        context.lineTo(b.x * size, b.y * size);
+        context.stroke();
+      }
+    }
+    const draft = state.lineDraft;
+    if (draft) {
+      const points = draft.kind !== "partition" && state.lineHover ? [...draft.points, state.lineHover] : draft.points;
+      context.strokeStyle = "rgba(214, 104, 74, 0.95)";
+      context.lineWidth = Math.max(3, size * 0.1);
+      context.setLineDash([8, 6]);
+      context.beginPath();
+      points.forEach((p, i) => (i ? context.lineTo(p.x * size, p.y * size) : context.moveTo(p.x * size, p.y * size)));
+      context.stroke();
+      context.setLineDash([]);
+      context.fillStyle = "rgba(214, 104, 74, 0.95)";
+      for (const p of draft.points) {
+        context.beginPath();
+        context.arc(p.x * size, p.y * size, Math.max(3, size * 0.1), 0, Math.PI * 2);
+        context.fill();
+      }
+    }
+    context.restore();
+  }
+
   function setTool(tool) {
     if (!toolAllowedInMode(tool, state.mode)) return;
+    if (tool !== "lines") {
+      state.lineDraft = null;
+      state.lineGatePending = false;
+    }
     state.tool = tool;
     document.querySelectorAll(".tool").forEach((button) => button.classList.toggle("active", button.dataset.tool === tool));
     refreshInspector();
@@ -3680,6 +4031,7 @@
       drawSelection(context, size);
       if (layers.objects || layers.doors) drawObjectControls(context, size);
       if (real) drawRealSizeLabel(context, size);
+      if (state.tool === "lines") drawLineOverlays(context, size);
       drawDragPreview(context, size);
       if (real) drawScaleBar(context, size);
     }
@@ -3769,6 +4121,7 @@
     updateObjectFields();
     syncSelectedObjectFields();
     refreshWallControls();
+    syncLinePanel();
     if (state.selected?.type === "tile") {
       const tile = core.getTile(state.doc, state.selected.x, state.selected.y);
       elements.selectionSummary.textContent = `Tile ${state.selected.x}, ${state.selected.y} | ${tile.terrain} | ${tile.structure} | ${tile.room_id || "no room"}`;
@@ -4053,6 +4406,13 @@
     });
     window.addEventListener("keydown", (event) => {
       if (event.metaKey || event.ctrlKey || event.altKey || isTypingTarget(event.target)) return;
+      if (state.tool === "lines" && ["Enter", "Escape", "Delete", "Backspace"].includes(event.key)) {
+        event.preventDefault();
+        if (event.key === "Enter") finishLineDraft();
+        else if (event.key === "Escape") cancelLineDraft();
+        else deleteSelectedLine();
+        return;
+      }
       const tool = TOOL_SHORTCUTS[event.key.toLowerCase()];
       if (!tool) return;
       event.preventDefault();
@@ -4143,6 +4503,19 @@
       elements.selectedRealWidthCm, elements.selectedRealDepthCm, elements.selectedRealHeightCm,
       elements.selectedRealAlign
     ].forEach((input) => input.addEventListener("change", updateRealSizeFromFields));
+    document.querySelectorAll("[data-line-kind]").forEach((button) => {
+      button.addEventListener("click", () => setLineKind(button.dataset.lineKind));
+    });
+    elements.lineWidthCm.addEventListener("change", updateSelectedLineWidth);
+    elements.lineAddOpening.addEventListener("click", addSlidingDoorToSelected);
+    elements.lineAddGate.addEventListener("click", () => {
+      state.lineGatePending = true;
+      refreshInspector();
+    });
+    elements.lineDelete.addEventListener("click", deleteSelectedLine);
+    canvas.addEventListener("dblclick", () => {
+      if (state.tool === "lines") finishLineDraft();
+    });
   }
 
   function stagePngLayers(kind) {
