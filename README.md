@@ -66,6 +66,8 @@ drag a partition wall (locks to horizontal or vertical), or click points for a p
 stepping stones or a fence and finish with double-click or Enter (Esc cancels). Click a line to
 select it; the panel can add a sliding door to a partition, a gate to a fence, change the
 width / thickness, or delete it. Hold Shift to start a new line on top of an existing one.
+A selected line shows its points: drag a point to move it (a partition end slides along the
+wall), double-click a path or fence to add a point, double-click a point to remove it.
 Lines do not block paths.
 
 ## Main Workflow

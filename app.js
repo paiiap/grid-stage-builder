@@ -612,7 +612,9 @@
     lineKind: "partition",
     lineDraft: null,
     selectedLine: null,
-    lineGatePending: false
+    lineGatePending: false,
+    lineDrag: null,
+    lineSelectedAt: 0
   };
 
   function clamp(value, min, max) {
@@ -2021,6 +2023,60 @@
     return best;
   }
 
+  function linePoints(entry) {
+    return entry.segments.length ? [entry.segments[0][0], ...entry.segments.map(([, b]) => b)] : [];
+  }
+
+  // point handle of the selected line under the cursor (partition: its two ends)
+  function lineHandleAt(point, tolerance = 0.3) {
+    const entry = selectedLineEntry();
+    if (!entry) return null;
+    let best = null;
+    linePoints(entry).forEach((p, index) => {
+      const distance = Math.hypot(point.x - p.x, point.y - p.y);
+      if (distance <= tolerance && (!best || distance < best.distance)) best = { entry, index, distance };
+    });
+    return best;
+  }
+
+  // move point `index` of a line; a partition end slides along the wall line. Returns the point's new index.
+  function moveLinePoint(entry, index, point) {
+    if (entry.type !== "thin_wall") {
+      Object.assign(entry.item.points[index], { x: point.x, y: point.y });
+      return index;
+    }
+    const wall = entry.item;
+    const vertical = wall.axis === "vertical" || wall.axis === "y";
+    const value = vertical ? point.y : point.x;
+    const other = index === 0 ? Number(wall.to) : Number(wall.from);
+    if (Math.abs(value - other) < 0.25) return index;
+    wall.from = Math.min(value, other);
+    wall.to = Math.max(value, other);
+    return value < other ? 0 : 1;
+  }
+
+  // double-click on the selected path: on a point removes it, on a segment inserts a point
+  function editSelectedPathPoint(raw) {
+    const entry = selectedLineEntry();
+    if (!entry || entry.type !== "decor_path" || performance.now() - state.lineSelectedAt < 500) return false;
+    const handle = lineHandleAt(raw);
+    if (handle) {
+      if (entry.item.points.length > 2) {
+        pushHistory();
+        entry.item.points.splice(handle.index, 1);
+        afterChange(true);
+      }
+      return true;
+    }
+    const hit = lineAt(raw);
+    if (!hit || hit.entry.item !== entry.item) return false;
+    const index = hit.entry.segments.findIndex(([a, b]) => a === hit.a && b === hit.b);
+    pushHistory();
+    entry.item.points.splice(index + 1, 0, snapLinePoint(hit.point));
+    afterChange(true);
+    return true;
+  }
+
   function selectedLineEntry() {
     if (!state.selectedLine) return null;
     return lineEntries().find((entry) => entry.type === state.selectedLine.type && entry.item.id === state.selectedLine.id) || null;
@@ -2166,8 +2222,15 @@
       return;
     }
     if (!state.lineDraft && !event.shiftKey) {
+      const handle = lineHandleAt(raw);
+      if (handle) {
+        state.lineDrag = { index: handle.index, moved: false };
+        return;
+      }
       const hit = lineAt(raw);
       if (hit) {
+        const already = state.selectedLine && state.selectedLine.type === hit.entry.type && state.selectedLine.id === hit.entry.item.id;
+        if (!already) state.lineSelectedAt = performance.now();
         state.selectedLine = { type: hit.entry.type, id: hit.entry.item.id };
         refreshInspector();
         render();
@@ -2189,7 +2252,17 @@
   function lineToolPointerMove(event) {
     const point = snapLinePoint(canvasToTilePoint(event));
     const draft = state.lineDraft;
-    if (draft && draft.kind === "partition" && event.buttons === 1) {
+    const drag = state.lineDrag;
+    if (drag && event.buttons === 1) {
+      const entry = selectedLineEntry();
+      if (!entry) return;
+      if (!drag.moved) {
+        pushHistory();
+        drag.moved = true;
+      }
+      drag.index = moveLinePoint(entry, drag.index, point);
+      render();
+    } else if (draft && draft.kind === "partition" && event.buttons === 1) {
       draft.points[1] = axisLockedLine(draft.points[0], point);
       render();
     } else if (draft && draft.kind !== "partition") {
@@ -2199,6 +2272,12 @@
   }
 
   function lineToolPointerUp() {
+    const drag = state.lineDrag;
+    if (drag) {
+      state.lineDrag = null;
+      if (drag.moved) afterChange(true);
+      return;
+    }
     const draft = state.lineDraft;
     if (draft && draft.kind === "partition") {
       state.lineDraft = null;
@@ -2214,7 +2293,9 @@
     const entry = selectedLineEntry();
     elements.lineHint.textContent = state.lineGatePending
       ? "Click on the selected fence where the gate goes."
-      : LINE_HINTS[state.lineKind];
+      : entry && !state.lineDraft
+        ? `Drag a point to move it.${entry.type === "decor_path" ? " Double-click the line to add a point, double-click a point to remove it." : ""}`
+        : LINE_HINTS[state.lineKind];
     if (entry) {
       const kind = lineKindOf(entry);
       const field = LINE_WIDTH_FIELD[kind];
@@ -2256,6 +2337,15 @@
         context.lineTo(b.x * size, b.y * size);
         context.stroke();
       }
+      context.setLineDash([]);
+      context.fillStyle = "#ffffff";
+      context.lineWidth = Math.max(2, size * 0.05);
+      for (const p of linePoints(entry)) {
+        context.beginPath();
+        context.arc(p.x * size, p.y * size, Math.max(5, size * 0.16), 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+      }
     }
     const draft = state.lineDraft;
     if (draft) {
@@ -2282,6 +2372,7 @@
     if (tool !== "lines") {
       state.lineDraft = null;
       state.lineGatePending = false;
+      state.lineDrag = null;
     }
     state.tool = tool;
     document.querySelectorAll(".tool").forEach((button) => button.classList.toggle("active", button.dataset.tool === tool));
@@ -4513,8 +4604,10 @@
       refreshInspector();
     });
     elements.lineDelete.addEventListener("click", deleteSelectedLine);
-    canvas.addEventListener("dblclick", () => {
-      if (state.tool === "lines") finishLineDraft();
+    canvas.addEventListener("dblclick", (event) => {
+      if (state.tool !== "lines") return;
+      if (!state.lineDraft && editSelectedPathPoint(canvasToTilePoint(event))) return;
+      finishLineDraft();
     });
   }
 

@@ -874,3 +874,12 @@ test("stage mode cannot select or edit master map objects", () => {
   assert.match(app, /selectedObject\(\) && state\.mode === "map"/);
   assert.match(app, /visible\.add\("selected-object"\)/);
 });
+
+test("lines tool edits points of a selected line", () => {
+  assert.match(app, /function lineHandleAt\(/);
+  assert.match(app, /function moveLinePoint\(/);
+  assert.match(app, /state\.lineDrag = \{ index: handle\.index, moved: false \}/);
+  assert.match(app, /drag\.index = moveLinePoint\(entry, drag\.index, point\)/);
+  assert.match(app, /if \(!state\.lineDraft && editSelectedPathPoint\(canvasToTilePoint\(event\)\)\) return;/);
+  assert.match(app, /entry\.item\.points\.splice\(handle\.index, 1\)/);
+});

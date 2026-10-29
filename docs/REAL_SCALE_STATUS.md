@@ -31,7 +31,7 @@ what renderers (e.g. the Pawtectors Blender build) can read. Field reference: `R
 - [x] Tests for `real-scale.js` (`tests/real-scale.test.js`)
 - [x] Tool to draw / edit `thin_walls` (Lines tool: partitions + sliding doors)
 - [x] Tool to draw / edit `decor_paths` (Lines tool: paved, stepping stones, fence + gates)
-- [ ] Lines tool: move / reshape points of an existing line (now: delete and redraw)
+- [x] Lines tool: move / reshape points of an existing line (drag points, double-click to add / remove)
 - [ ] Decide whether `thin_walls` should block paths (edge blocking is not modelled; tiles only)
 - [ ] Fold this into `docs/map-builder-status.md`
 
