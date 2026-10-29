@@ -560,6 +560,7 @@
     },
     path: "#f2dec2",
     pathLine: "#d6684a",
+    passage: "#7a4fa3",
     spawn: "#d64f3c",
     base: "#2f6fbc",
     build: "#fffaf0",
@@ -736,6 +737,7 @@
       wall_segments: clone(state.doc.wall_segments || []),
       thin_walls: clone(state.doc.thin_walls || []),
       decor_paths: clone(state.doc.decor_paths || []),
+      secret_passages: clone(state.doc.secret_passages || []),
       paths: clone(state.doc.paths || []),
       markers: clone(state.doc.markers || []),
       stages: clone(state.doc.stages || [])
@@ -756,6 +758,7 @@
     state.doc.wall_segments = clone(snapshot.wall_segments || []);
     state.doc.thin_walls = clone(snapshot.thin_walls || []);
     state.doc.decor_paths = clone(snapshot.decor_paths || []);
+    state.doc.secret_passages = clone(snapshot.secret_passages || []);
     state.doc.paths = clone(snapshot.paths || []);
     state.doc.markers = clone(snapshot.markers || []);
     state.doc.stages = clone(snapshot.stages || []);
@@ -825,6 +828,7 @@
       wall_segments: [],
       thin_walls: [],
       decor_paths: [],
+      secret_passages: [],
       paths: [],
       markers: [],
       stages: []
@@ -3222,11 +3226,18 @@
         const ay = a.y * size + size / 2;
         const bx = b.x * size + size / 2;
         const by = b.y * size + size / 2;
+        if (b.tunnel) {
+          context.save();
+          context.strokeStyle = colors.passage;
+          context.fillStyle = colors.passage;
+          context.setLineDash([size * 0.25, size * 0.2]);
+        }
         context.beginPath();
         context.moveTo(ax, ay);
         context.lineTo(bx, by);
         context.stroke();
         drawArrowHead(context, ax, ay, bx, by, size);
+        if (b.tunnel) context.restore();
       }
       context.restore();
     }
@@ -4088,6 +4099,36 @@
     context.restore();
   }
 
+  // secret passages (map.secret_passages): enemies can vanish into one end and come out of the other
+  function drawSecretPassages(context, size) {
+    const passages = state.doc.secret_passages || [];
+    if (!passages.length) return;
+    context.save();
+    for (const passage of passages) {
+      const ends = [passage.a, passage.b].map((p) => ({ x: (p.x + 0.5) * size, y: (p.y + 0.5) * size }));
+      context.strokeStyle = colors.passage;
+      context.globalAlpha = 0.55;
+      context.lineWidth = Math.max(2, size * 0.06);
+      context.setLineDash([size * 0.15, size * 0.25]);
+      context.beginPath();
+      context.moveTo(ends[0].x, ends[0].y);
+      context.lineTo(ends[1].x, ends[1].y);
+      context.stroke();
+      context.setLineDash([]);
+      context.globalAlpha = 1;
+      for (const end of ends) {
+        context.fillStyle = "#2a1f2e";
+        context.beginPath();
+        context.ellipse(end.x, end.y, size * 0.34, size * 0.24, 0, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = colors.passage;
+        context.lineWidth = Math.max(2, size * 0.06);
+        context.stroke();
+      }
+    }
+    context.restore();
+  }
+
   function drawDocument(context, size, options) {
     const layers = Object.assign({}, state.layers, options?.layers || {});
     const editorOverlays = options?.editorOverlays !== false;
@@ -4112,6 +4153,7 @@
       }
     }
     drawObjects(context, size, layers);
+    if (layers.objects !== false) drawSecretPassages(context, size);
     if (editorOverlays && state.mode === "stage") drawStages(context, size);
     if (layers.grid) drawGrid(context, size);
     if (state.mode === "stage" && layers.path) drawPath(context, size);
@@ -4375,6 +4417,7 @@
       wall_segments: Array.isArray(source.wall_segments) ? source.wall_segments : undefined,
       thin_walls: Array.isArray(source.thin_walls) ? source.thin_walls : [],
       decor_paths: Array.isArray(source.decor_paths) ? source.decor_paths : [],
+      secret_passages: Array.isArray(source.secret_passages) ? source.secret_passages : [],
       paths: Array.isArray(source.paths) ? source.paths : [],
       markers: Array.isArray(source.markers) ? source.markers : [],
       stages: Array.isArray(source.stages) ? source.stages : []

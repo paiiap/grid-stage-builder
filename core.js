@@ -164,6 +164,7 @@
       wall_segments: [],
       thin_walls: [],
       decor_paths: [],
+      secret_passages: [],
       maps: [{
         id: map.id,
         name: map.name,
@@ -178,7 +179,8 @@
         stages: [],
         wall_segments: [],
         thin_walls: [],
-        decor_paths: []
+        decor_paths: [],
+        secret_passages: []
       }]
     };
   }
@@ -265,6 +267,7 @@
     const points = path.points || [];
     const widthTiles = Math.max(1, Number(path.width_tiles || 1));
     for (let index = 0; index < points.length - 1; index += 1) {
+      if (points[index + 1].tunnel) continue; // underground hop through a secret passage
       const axis = perpendicularAxis(points[index], points[index + 1]);
       for (const center of lineCells(points[index], points[index + 1])) {
         for (const cell of expandPoint(center, widthTiles, axis)) {
@@ -369,6 +372,11 @@
       marker.y + height <= bounds.y + bounds.height;
   }
 
+  function passageJoins(passage, a, b) {
+    const same = (p, q) => p && q && Number(p.x) === Number(q.x) && Number(p.y) === Number(q.y);
+    return (same(passage.a, a) && same(passage.b, b)) || (same(passage.a, b) && same(passage.b, a));
+  }
+
   function validateDocument(doc) {
     const errors = [];
     const warnings = [];
@@ -442,11 +450,21 @@
       for (let index = 0; index < points.length - 1; index += 1) {
         const a = points[index];
         const b = points[index + 1];
+        if (b.tunnel) {
+          const passage = (doc.secret_passages || []).find((item) => item.id === b.tunnel);
+          if (!passage) errors.push(`${pathLabel(path, stage)} uses missing secret passage ${b.tunnel}.`);
+          else if (!passageJoins(passage, a, b)) errors.push(`${pathLabel(path, stage)} tunnel ${b.tunnel} must run from one end of the passage to the other (${a.x},${a.y} -> ${b.x},${b.y}).`);
+          continue;
+        }
         if (a.x !== b.x && a.y !== b.y) errors.push(`${pathLabel(path, stage)} has diagonal step from ${a.x},${a.y} to ${b.x},${b.y}.`);
       }
       // the first and last point may sit on the opening or furniture enemies come out of / head for
       // (a door, a sink, the fridge), so only the cells in between must be walkable
       const endpoints = new Set(points.length ? [points[0], points[points.length - 1]].map((point) => cellKey(point.x, point.y)) : []);
+      // both mouths of a secret passage sit in a wall or in furniture too
+      points.forEach((point, index) => {
+        if (point.tunnel && index > 0) [points[index - 1], point].forEach((end) => endpoints.add(cellKey(end.x, end.y)));
+      });
       for (const cell of rasterizePath(path)) {
         if (!inBounds(doc, cell.x, cell.y)) errors.push(`${pathLabel(path, stage)} footprint leaves map at ${cell.x},${cell.y}.`);
         if (endpoints.has(cellKey(cell.x, cell.y))) continue;
@@ -641,7 +659,8 @@
         return Object.assign({}, path, {
           spawn_id: pathEndpointId(path, sourceMarkers, "spawn"),
           base_id: pathEndpointId(path, sourceMarkers, "base"),
-          points: (path.points || []).filter((point) => insideRect(point, bounds)).map((point) => normalizePoint(point, stage)),
+          points: (path.points || []).filter((point) => insideRect(point, bounds))
+            .map((point) => Object.assign(normalizePoint(point, stage), point.tunnel ? { tunnel: point.tunnel } : {})),
           footprint: mergeCells([rasterizePath(path), extraAreas])
           .filter((cell) => insideRect(cell, bounds))
           .map((cell) => normalizePoint(cell, stage))
@@ -659,6 +678,9 @@
       tiles: localTiles,
       objects: objectList,
       paths: pathList,
+      secret_passages: (doc.secret_passages || [])
+        .filter((passage) => insideRect(passage.a, bounds) && insideRect(passage.b, bounds))
+        .map((passage) => Object.assign({}, passage, { a: normalizePoint(passage.a, stage), b: normalizePoint(passage.b, stage) })),
       markers: markerList,
       export: {
         padding_color: stage.padding_color || "#ebe2d2",

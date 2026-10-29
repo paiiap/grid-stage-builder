@@ -358,6 +358,40 @@ test("stage path endpoints may sit on the furniture enemies come out of", () => 
   assert(core.validateDocument(doc).errors.some((message) => message.includes("object sofa_01")));
 });
 
+test("a stage path can go underground through a secret passage", () => {
+  const doc = core.createDocument();
+  doc.objects.push({ id: "wall_block", category: "sofa", x: 4, y: 0, width: 1, height: 8, blocking: true });
+  doc.secret_passages = [{ id: "tunnel_01", name: "Tunnel", kind: "tunnel", a: { x: 2, y: 3 }, b: { x: 7, y: 5 } }];
+  const stage = {
+    id: "stage_tunnel",
+    name: "Tunnel Test",
+    x: 0,
+    y: 0,
+    width: 10,
+    height: 10,
+    export_tile_size: 48,
+    markers: [
+      { id: "spawn_01", type: "spawn", x: 1, y: 3 },
+      { id: "base_01", type: "base", x: 9, y: 5 }
+    ],
+    paths: [
+      { id: "path_01", name: "Path 01", spawn_id: "spawn_01", base_id: "base_01", width_tiles: 1,
+        points: [{ x: 1, y: 3 }, { x: 2, y: 3 }, { x: 7, y: 5, tunnel: "tunnel_01" }, { x: 9, y: 5 }] }
+    ]
+  };
+  doc.stages.push(stage);
+  const cells = core.rasterizePath(stage.paths[0]);
+  assert.equal(cells.some((cell) => cell.x === 4), false);
+  assert.deepEqual(core.validateDocument(doc).errors, []);
+  const exported = core.exportStageJson(doc, "stage_tunnel");
+  assert.equal(exported.paths[0].points[2].tunnel, "tunnel_01");
+  assert.equal(exported.secret_passages.length, 1);
+  stage.paths[0].points[2] = { x: 7, y: 6, tunnel: "tunnel_01" };
+  assert(core.validateDocument(doc).errors.some((message) => message.includes("tunnel tunnel_01")));
+  stage.paths[0].points[2] = { x: 7, y: 5, tunnel: "nope" };
+  assert(core.validateDocument(doc).errors.some((message) => message.includes("missing secret passage nope")));
+});
+
 test("stage export only includes entities inside bounds", () => {
   const doc = core.makeSampleDocument();
   doc.stages[0].markers.push({ id: "outside_slot", type: "build_slot", x: 40, y: 40, width: 1, height: 1, label: "Outside" });

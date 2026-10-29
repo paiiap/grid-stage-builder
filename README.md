@@ -57,6 +57,7 @@ All real-scale data is optional, so older projects load unchanged:
 | `style` | object | renderer hints, e.g. `{color}`, `{curtain_rail}`, `{upper_cabinets}`, `{hood}`, tree `{kind, canopy_cm, leaf_color}`, `{render_as: "wall"}` |
 | `thin_walls[]` | map | partitions off the tile centre lines: `axis`, `at`, `from`, `to` (tile units, fractions allowed), `thickness_cm`, `openings[{from, to, type}]` |
 | `decor_paths[]` | map | landscape lines: `kind` `paved` (with `width_cm`), `stepping_stones` (with `spacing_cm`) or `fence` (with `gates`), `points[{x, y}]` |
+| `secret_passages[]` | map | hidden links between rooms: `id`, `name`, `kind` (`tunnel` / `pipe`), ends `a` and `b` `{x, y}`. A stage path point with `tunnel: "<id>"` is reached through that passage from the previous point (one end to the other): no floor cells, drawn dashed, kept in the stage export |
 
 Default real sizes per category live in `REAL_SIZES_CM` in `real-scale.js`; edit a placed
 object's real size in **Object Details**.

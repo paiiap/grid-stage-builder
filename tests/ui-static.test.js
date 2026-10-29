@@ -883,3 +883,10 @@ test("lines tool edits points of a selected line", () => {
   assert.match(app, /if \(!state\.lineDraft && editSelectedPathPoint\(canvasToTilePoint\(event\)\)\) return;/);
   assert.match(app, /entry\.item\.points\.splice\(handle\.index, 1\)/);
 });
+
+test("secret passages are drawn and tunnel hops are dashed", () => {
+  assert.match(app, /function drawSecretPassages\(context, size\)/);
+  assert.match(app, /if \(layers\.objects !== false\) drawSecretPassages\(context, size\);/);
+  assert.match(app, /if \(b\.tunnel\) \{/);
+  assert.match(app, /secret_passages: Array\.isArray\(source\.secret_passages\) \? source\.secret_passages : \[\]/);
+});
