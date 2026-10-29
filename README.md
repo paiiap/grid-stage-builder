@@ -137,6 +137,8 @@ Examples:
 - path collides with a blocking object
 - stage area leaves the master map
 
+A path's first and last point may sit on the door, window or furniture the enemies come out of or head for (a sink, the fridge); only the cells in between must be walkable.
+
 When a path hits furniture or another blocking object, the message includes the stage and object, so it is easier to fix the correct level.
 
 ## Run Locally

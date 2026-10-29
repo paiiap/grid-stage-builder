@@ -444,8 +444,12 @@
         const b = points[index + 1];
         if (a.x !== b.x && a.y !== b.y) errors.push(`${pathLabel(path, stage)} has diagonal step from ${a.x},${a.y} to ${b.x},${b.y}.`);
       }
+      // the first and last point may sit on the opening or furniture enemies come out of / head for
+      // (a door, a sink, the fridge), so only the cells in between must be walkable
+      const endpoints = new Set(points.length ? [points[0], points[points.length - 1]].map((point) => cellKey(point.x, point.y)) : []);
       for (const cell of rasterizePath(path)) {
         if (!inBounds(doc, cell.x, cell.y)) errors.push(`${pathLabel(path, stage)} footprint leaves map at ${cell.x},${cell.y}.`);
+        if (endpoints.has(cellKey(cell.x, cell.y))) continue;
         const tile = getTile(doc, cell.x, cell.y);
         if (tile && (tile.structure === "wall" || tile.structure === "blocked")) {
           errors.push(`${pathLabel(path, stage)} collides with blocked tile ${cell.x},${cell.y}.`);

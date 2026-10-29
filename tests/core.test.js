@@ -332,6 +332,32 @@ test("stage validation names the stage and object when a path hits furniture", (
   assert(result.errors.some((message) => message.includes("stage Living Test (stage_living)") && message.includes("object sofa_01")));
 });
 
+test("stage path endpoints may sit on the furniture enemies come out of", () => {
+  const doc = core.createDocument();
+  doc.objects.push({ id: "fridge_01", category: "fridge", x: 1, y: 3, width: 1, height: 1, blocking: true });
+  doc.objects.push({ id: "sofa_01", category: "sofa", x: 3, y: 3, width: 1, height: 1, blocking: true });
+  const stage = {
+    id: "stage_kitchen",
+    name: "Kitchen Test",
+    x: 0,
+    y: 0,
+    width: 8,
+    height: 8,
+    export_tile_size: 48,
+    markers: [
+      { id: "spawn_01", type: "spawn", x: 1, y: 3 },
+      { id: "base_01", type: "base", x: 6, y: 5 }
+    ],
+    paths: [
+      { id: "path_01", name: "Path 01", spawn_id: "spawn_01", base_id: "base_01", width_tiles: 1, points: [{ x: 1, y: 3 }, { x: 1, y: 5 }, { x: 6, y: 5 }] }
+    ]
+  };
+  doc.stages.push(stage);
+  assert.equal(core.validateDocument(doc).errors.some((message) => message.includes("fridge_01")), false);
+  stage.paths[0].points = [{ x: 1, y: 3 }, { x: 5, y: 3 }, { x: 5, y: 5 }, { x: 6, y: 5 }];
+  assert(core.validateDocument(doc).errors.some((message) => message.includes("object sofa_01")));
+});
+
 test("stage export only includes entities inside bounds", () => {
   const doc = core.makeSampleDocument();
   doc.stages[0].markers.push({ id: "outside_slot", type: "build_slot", x: 40, y: 40, width: 1, height: 1, label: "Outside" });
